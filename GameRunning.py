@@ -1,7 +1,6 @@
 from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryAccessor
 from desmume.controls import Keys, load_configured_config, keymask
 import numpy as np
-import keyboard
 from collections import deque
 from DataProccesing import preprocess_image
 from AI import MarioDQN
@@ -105,15 +104,6 @@ while not window.has_quit():
 
     # Perform the action
     action_mapping[action]()
-
-    try:
-        if keyboard.is_pressed('l'):
-            run_right()
-        elif keyboard.is_pressed('j'):
-            run_left()
-    except:
-        release_all()
-        break
 
     emu.cycle()
     window.draw()
