@@ -1,7 +1,7 @@
 from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryAccessor
 from desmume.controls import Keys, load_configured_config, keymask
 import numpy as np
-from collections import deque
+import keyboard
 from DataProccesing import preprocess_image
 from AI import MarioDQN
 
@@ -31,10 +31,12 @@ def jump_right():
 
 def walk_left():
     release_all()
+    emu.input.keypad_add_key(keymask(Keys.KEY_X))
     emu.input.keypad_add_key(keymask(Keys.KEY_LEFT))
 
 def walk_right():
     release_all()
+    emu.input.keypad_add_key(keymask(Keys.KEY_X))
     emu.input.keypad_add_key(keymask(Keys.KEY_RIGHT))
 
 def run_left():
@@ -71,12 +73,14 @@ saver.load_file('W1-1.sav')
 mem = DeSmuME_Memory(emu)
 
 # Initialize a deque with maxlen 5 filled with zeros
-frame_stack = np.zeros(35280)
+AMOUNT_OF_FRAMES = 2
+TOTAL_PIXELS = AMOUNT_OF_FRAMES * 7056
+frame_stack = np.zeros(TOTAL_PIXELS)
 
 # Initialize your AI
-state_shape = 7056 * 5  # This should be 35280
+state_shape = TOTAL_PIXELS # This should be 21168
 n_actions = 9  # The number of actions your AI can take
-mario_agent = MarioDQN(state_shape, n_actions)
+mario_agent = MarioDQN(state_shape, n_actions, TOTAL_PIXELS)
 
 # Action mapping
 action_mapping = {
@@ -92,6 +96,9 @@ action_mapping = {
     9: up,
 }
 
+# Create a memory accessor for reading memory
+mem_acc = MemoryAccessor(False, emu.memory)
+
 # Run the emulation as fast as possible until quit
 while not window.has_quit():
     window.process_input()   # Controls are the default DeSmuME controls, see below.
@@ -105,6 +112,20 @@ while not window.has_quit():
     # Perform the action
     action_mapping[action]()
 
+    # Check for keyboard inputs, and moves if so
+    try:
+        if keyboard.is_pressed('x'):
+            release_all()
+            jump()
+        elif keyboard.is_pressed('j'):
+            release_all()
+            run_left()
+        elif keyboard.is_pressed('l'):
+            release_all()
+            run_right()
+    except:
+        pass
+
     emu.cycle()
     window.draw()
 
@@ -114,9 +135,7 @@ while not window.has_quit():
     frame_stack = frame_stack[7056:]
     frame_stack = np.append(frame_stack, processed_frame)
 
-
     # Gets the amount of curennt lives
-    mem_acc = MemoryAccessor(False, emu.memory)
     lives = mem_acc.read_byte(0x2208b364)
     if lives < 4:
         print('Died, restarting...')
@@ -124,9 +143,8 @@ while not window.has_quit():
 
     # Calculate the reward
     # 12288 is the max speed, generally. we will make it less just in case the AI gets too fast
-    Movement = emu.memory.signed[0x021B6A90:0x021B6A93][0]
+    Movement = emu.memory.signed[0x021B6A90:0x021B6A90:4]
 
-    reward = -Movement / 20
-    print(reward)
+    print(Movement, end='\r')
 
-    mario_agent.learn(current_state, action, reward, frame_stack)
+    mario_agent.learn(current_state, action, Movement, frame_stack)

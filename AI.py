@@ -3,17 +3,18 @@ import tensorflow as tf
 from random import randrange
 
 class MarioDQN:
-    def __init__(self, n_states, n_actions, alpha=0.1, gamma=0.99, epsilon=0.1):
+    def __init__(self, n_states, n_actions, TOTAL_PIXELS, alpha=0.1, gamma=0.99, epsilon=0.1):
         self.n_states = n_states
         self.n_actions = n_actions
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon
+        self.TOTAL_PIXELS = TOTAL_PIXELS
         self.model = self.build_model()
 
     def build_model(self):
         model = tf.keras.Sequential([
-            tf.keras.layers.Dense(units=128, activation='relu', input_shape=(35280,)),
+            tf.keras.layers.Dense(units=128, activation='relu', input_shape=(self.TOTAL_PIXELS,)),
             tf.keras.layers.Dense(24, activation='relu'),
             tf.keras.layers.Dense(24, activation='relu'),
             tf.keras.layers.Dense(self.n_actions, activation='linear')
@@ -22,14 +23,13 @@ class MarioDQN:
         return model
 
     def choose_action(self, frame_stack):
-        #stacked_frames_array = np.array(frame_stack).reshape(-1)  # Flatten the deque into a single numpy array
         if np.random.rand() < self.epsilon:
             return randrange(self.n_actions)
         else:
-            return np.argmax(self.model.predict(frame_stack.reshape(1, -1)))
+            return np.argmax(self.model.predict(frame_stack.reshape(1, -1), verbose=0))
 
     def learn(self, frame_stack, action, reward, next_frame_stack):
-        target = reward + self.gamma * np.max(self.model.predict(next_frame_stack.reshape(1, -1)))
+        target = reward + self.gamma * np.max(self.model.predict(next_frame_stack.reshape(1, -1), verbose=0))
         target = np.array([target])  # Ensure it's a 1D tensor
         
         with tf.GradientTape() as tape:
@@ -43,4 +43,4 @@ class MarioDQN:
 
     def predict(self, frame_stack):
         stacked_frames_array = np.array(frame_stack).reshape(-1)  # Flatten the deque into a single numpy array
-        return np.argmax(self.model.predict(stacked_frames_array.reshape(1, -1)))
+        return np.argmax(self.model.predict(stacked_frames_array.reshape(1, -1), verbose=0))
