@@ -124,11 +124,9 @@ while not window.has_quit():
 
     # Calculate the reward
     # 12288 is the max speed, generally. we will make it less just in case the AI gets too fast
-    leftMovement = mem_acc.read_long(0x021B6A90)
+    Movement = emu.memory.signed[0x021B6A90:0x021B6A93][0]
 
-    reward = leftMovement / 20000
+    reward = -Movement / 20
+    print(reward)
 
     mario_agent.learn(current_state, action, reward, frame_stack)
-    
-    # Print the movement over the other movement line
-    print('Movement: ' + str(leftMovement) + ' Lives: ' + str(lives), end='\r')
