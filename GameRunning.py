@@ -124,9 +124,9 @@ while not window.has_quit():
 
     # Calculate the reward
     # 12288 is the max speed, generally. we will make it less just in case the AI gets too fast
-    leftMovement = mem_acc.read_long(0x021B6A90) / 20000
+    leftMovement = mem_acc.read_long(0x021B6A90)
 
-    reward = leftMovement / 3
+    reward = leftMovement / 20000
 
     mario_agent.learn(current_state, action, reward, frame_stack)
     
