@@ -14,7 +14,7 @@ class MarioDQN:
 
     def build_model(self):
         model = tf.keras.Sequential([
-            tf.keras.layers.Dense(units=128, activation='relu', input_shape=(self.TOTAL_PIXELS,)),
+            tf.keras.layers.Dense(128, activation='relu', input_shape=(self.TOTAL_PIXELS,)),
             tf.keras.layers.Dense(24, activation='relu'),
             tf.keras.layers.Dense(24, activation='relu'),
             tf.keras.layers.Dense(self.n_actions, activation='linear')

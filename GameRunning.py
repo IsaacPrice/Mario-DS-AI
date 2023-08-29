@@ -126,6 +126,8 @@ while not window.has_quit():
         elif keyboard.is_pressed('l'):
             release_all()
             run_right()
+        elif keyboard.is_pressed('a'):
+            saver.save_file('W1-1.sav')
     except:
         pass
 
@@ -134,14 +136,13 @@ while not window.has_quit():
 
     # Update the current previous 5 frames
     frame = emu.screenshot()
-    processed_frame = preprocess_image(frame)
+    processed_frame, dead = preprocess_image(frame)
     frame_stack = frame_stack[7056:]
     frame_stack = np.append(frame_stack, processed_frame)
 
-    # Gets the amount of curennt lives
-    lives = mem_acc.read_byte(0x2208b364)
-    if lives < 4:
+    if dead == True:
         print('Died, restarting...')
+        total_reward -= 3
         saver.load_file('W1-1.sav')
 
     # Calculate the reward
@@ -154,8 +155,7 @@ while not window.has_quit():
     total_reward += reward
     amount += 1
 
-    print(reward, end='\r')
-
-    if amount // 3 == 0:
+    if amount % 2 == 0:
         mario_agent.learn(current_state, action, total_reward, frame_stack)
+        print(total_reward, end='\r')
         total_reward = 0
