@@ -73,7 +73,7 @@ saver.load_file('W1-1.sav')
 mem = DeSmuME_Memory(emu)
 
 # Initialize a deque with maxlen 5 filled with zeros
-AMOUNT_OF_FRAMES = 2
+AMOUNT_OF_FRAMES = 1
 TOTAL_PIXELS = AMOUNT_OF_FRAMES * 7056
 frame_stack = np.zeros(TOTAL_PIXELS)
 
@@ -98,6 +98,9 @@ action_mapping = {
 
 # Create a memory accessor for reading memory
 mem_acc = MemoryAccessor(False, emu.memory)
+
+total_reward = 0
+amount = 0
 
 # Run the emulation as fast as possible until quit
 while not window.has_quit():
@@ -145,6 +148,14 @@ while not window.has_quit():
     # 12288 is the max speed, generally. we will make it less just in case the AI gets too fast
     Movement = emu.memory.signed[0x021B6A90:0x021B6A90:4]
 
-    print(Movement, end='\r')
+    reward = Movement / 20000 # Get the reward just from the movement
+    reward = reward - 0.1 # Punish the AI for not moving
 
-    mario_agent.learn(current_state, action, Movement, frame_stack)
+    total_reward += reward
+    amount += 1
+
+    print(reward, end='\r')
+
+    if amount // 3 == 0:
+        mario_agent.learn(current_state, action, total_reward, frame_stack)
+        total_reward = 0
