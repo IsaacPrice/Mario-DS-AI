@@ -100,7 +100,7 @@ while not window.has_quit():
     total_reward += reward
     amount += 1
 
-    if amount % 2 == 0:
+    if amount % update_every == 0:
         mario_agent.learn(current_state, action, total_reward, frame_stack)
         print(total_reward, end='\r')
         total_reward = 0
