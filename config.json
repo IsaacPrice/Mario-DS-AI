@@ -1,0 +1,13 @@
+{
+    "ModelSettings": {
+        "FrameStackAmount" : 3,
+        "UpdateEveryNFrame" : 3
+    },
+    "Inputs" : {
+        "Left" : "l",
+        "Right" : "j",
+        "Sprint" : "a",
+        "Jump" : "z",
+        "Save" : "t"
+    }
+}
