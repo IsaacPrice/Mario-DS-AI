@@ -1,61 +1,9 @@
 from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryAccessor
-from desmume.controls import Keys, load_configured_config, keymask
 import numpy as np
 import keyboard
 from DataProccesing import preprocess_image
 from AI import MarioDQN
-
-# These are all the inputs that we need the AI to use
-keys = [Keys.KEY_A, Keys.KEY_X, Keys.KEY_LEFT, Keys.KEY_RIGHT, Keys.KEY_DOWN, Keys.KEY_UP]
-
-def release_all():
-    for key in keys:
-        emu.input.keypad_rm_key(keymask(key))
-
-def none():
-    release_all()
-
-def jump():
-    release_all()
-    emu.input.keypad_add_key(keymask(Keys.KEY_A))
-
-def jump_left():
-    release_all()
-    emu.input.keypad_add_key(keymask(Keys.KEY_A))
-    emu.input.keypad_add_key(keymask(Keys.KEY_LEFT))
-
-def jump_right():
-    release_all()
-    emu.input.keypad_add_key(keymask(Keys.KEY_A))
-    emu.input.keypad_add_key(keymask(Keys.KEY_RIGHT))
-
-def walk_left():
-    release_all()
-    emu.input.keypad_add_key(keymask(Keys.KEY_X))
-    emu.input.keypad_add_key(keymask(Keys.KEY_LEFT))
-
-def walk_right():
-    release_all()
-    emu.input.keypad_add_key(keymask(Keys.KEY_X))
-    emu.input.keypad_add_key(keymask(Keys.KEY_RIGHT))
-
-def run_left():
-    release_all()
-    emu.input.keypad_add_key(keymask(Keys.KEY_X))
-    emu.input.keypad_add_key(keymask(Keys.KEY_LEFT))
-
-def run_right():
-    release_all()
-    emu.input.keypad_add_key(keymask(Keys.KEY_X))
-    emu.input.keypad_add_key(keymask(Keys.KEY_RIGHT))
-
-def down():
-    release_all()
-    emu.input.keypad_add_key(keymask(Keys.KEY_DOWN))
-
-def up():
-    release_all()
-    emu.input.keypad_add_key(keymask(Keys.KEY_UP))
+from Input import Input
 
 emu = DeSmuME()
 emu.open('NSMB.nds')
@@ -82,29 +30,29 @@ state_shape = TOTAL_PIXELS # This should be 21168
 n_actions = 9  # The number of actions your AI can take
 mario_agent = MarioDQN(state_shape, n_actions, TOTAL_PIXELS)
 
+# Make a class object for the input
+inputs = Input(emu)
+
 # Action mapping
 action_mapping = {
-    0: none,
-    1: jump,
-    2: jump_left,
-    3: jump_right,
-    4: walk_left,
-    5: walk_right,
-    6: run_left,
-    7: run_right,
-    8: down,
-    9: up,
+    0: inputs.none,
+    1: inputs.jump,
+    2: inputs.jump_left,
+    3: inputs.jump_right,
+    4: inputs.walk_left,
+    5: inputs.walk_right,
+    6: inputs.run_left,
+    7: inputs.run_right,
+    8: inputs.down,
+    9: inputs.up
 }
-
-# Create a memory accessor for reading memory
-mem_acc = MemoryAccessor(False, emu.memory)
 
 total_reward = 0
 amount = 0
 
 # Run the emulation as fast as possible until quit
 while not window.has_quit():
-    window.process_input()   # Controls are the default DeSmuME controls, see below.
+    window.process_input() # Controls are the default DeSmuME controls, which are always wrong
     
     # Get the current state (stacked frames)
     current_state = frame_stack  # This is your state representation
@@ -118,14 +66,14 @@ while not window.has_quit():
     # Check for keyboard inputs, and moves if so
     try:
         if keyboard.is_pressed('x'):
-            release_all()
-            jump()
+            inputs.release_all()
+            inputs.jump()
         elif keyboard.is_pressed('j'):
-            release_all()
-            run_left()
+            inputs.release_all()
+            inputs.run_left()
         elif keyboard.is_pressed('l'):
-            release_all()
-            run_right()
+            inputs.release_all()
+            inputs.run_right()
         '''elif keyboard.is_pressed('a'):
             saver.save_file('W1-1.sav')'''
     except:
