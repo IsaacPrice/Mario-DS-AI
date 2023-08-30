@@ -4,31 +4,36 @@ import keyboard
 from DataProccesing import preprocess_image
 from AI import MarioDQN
 from Input import Input
+import json 
 
+# Creating the emulator & opening files
 emu = DeSmuME()
 emu.open('NSMB.nds')
-
-# Create the window for the emulator
 window = emu.create_sdl_window()
+saver = DeSmuME_Savestate(emu)
+saver.load_file('W1-1.sav')
+mem = DeSmuME_Memory(emu)
+
 
 # DATA FOR THE AI
 frames = [] # This will be the list of frames that will be used as the input for the AI
 reward = 0
 
-saver = DeSmuME_Savestate(emu)
-saver.load_file('W1-1.sav')
+# Load the config file
+with open('data.json', 'r') as f:
+    config_data = json.load(f)
 
-mem = DeSmuME_Memory(emu)
+# Get the neccisary data from the file
+AMOUNT_OF_FRAMES = config_data['ModelSettings']['FrameStackAmount']
+update_every = config_data['ModelSettings']['UpdateEveryNFrame']
 
-# Initialize a deque with maxlen 5 filled with zeros
-AMOUNT_OF_FRAMES = 1
+# Get the input shape and base values 
 TOTAL_PIXELS = AMOUNT_OF_FRAMES * 7056
 frame_stack = np.zeros(TOTAL_PIXELS)
+n_actions = 9  # The number of actions the AI can take
 
-# Initialize your AI
-state_shape = TOTAL_PIXELS # This should be 21168
-n_actions = 9  # The number of actions your AI can take
-mario_agent = MarioDQN(state_shape, n_actions, TOTAL_PIXELS)
+# Creat the AI
+mario_agent = MarioDQN(TOTAL_PIXELS, n_actions, TOTAL_PIXELS)
 
 # Make a class object for the input
 inputs = Input(emu)
@@ -55,7 +60,7 @@ while not window.has_quit():
     window.process_input() # Controls are the default DeSmuME controls, which are always wrong
     
     # Get the current state (stacked frames)
-    current_state = frame_stack  # This is your state representation
+    current_state = frame_stack 
 
     # Choose an action
     action = mario_agent.choose_action(current_state)
