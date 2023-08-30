@@ -6,17 +6,19 @@ class DebugInput:
         self.Input = Input
         self.Mappings = Mappings
     
-    def PollKeyboard(self):
+    def PollKeyboard(self, Inputs):
         try:
-            if keyboard.is_pressed(self.Mappings['left']) and not keyboard.is_pressed(self.Mappings['Sprint']):
-                self.Input.walk_left()
-            elif keyboard.is_pressed(self.Mappings['right']) and not keyboard.is_pressed(self.Mappings['Sprint']):
-                self.Input.walk_right()
-            elif keyboard.is_pressed(self.Mappings['left']) and keyboard.is_pressed(self.Mappings['Sprint']):
-                self.Input.run_left()
-            elif keyboard.is_pressed(self.Mappings['right']) and keyboard.is_pressed(self.Mappings['Sprint']):
-                self.Input.run_right()
+            if keyboard.is_pressed(self.Mappings['left']) and not keyboard.is_pressed(self.Mappings['sprint']):
+                return 4
+            elif keyboard.is_pressed(self.Mappings['right']) and not keyboard.is_pressed(self.Mappings['sprint']):
+                return 5
+            elif keyboard.is_pressed(self.Mappings['left']) and keyboard.is_pressed(self.Mappings['sprint']):
+                return 6
+            elif keyboard.is_pressed(self.Mappings['right']) and keyboard.is_pressed(self.Mappings['sprint']):
+                return 7
             if keyboard.is_pressed(self.Mappings['jump']):
-                self.Input.jump()
+                return 1
         except:
-            pass # Means that nothing was pressed
+            pass
+        
+        return 0

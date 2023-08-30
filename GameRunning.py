@@ -21,7 +21,7 @@ frames = [] # This will be the list of frames that will be used as the input for
 reward = 0
 
 # Load the config file
-with open('data.json', 'r') as f:
+with open('config.json', 'r') as f:
     config_data = json.load(f)
 
 # Get the neccisary data from the file
@@ -66,12 +66,15 @@ while not window.has_quit():
 
     # Choose an action
     action = mario_agent.choose_action(current_state)
+    user_action = key_inputs.PollKeyboard(inputs)
 
-    # Perform the action
-    action_mapping[action]()
-
+    if user_action > 0:
+        print('Using Users')
+        action_mapping[user_action]()
+    else:
+        print('& Using action')
+        action_mapping[action]()
     # Gets the inputs from the user if any
-    key_inputs.Pollkeyboard()
 
     emu.cycle()
     window.draw()
