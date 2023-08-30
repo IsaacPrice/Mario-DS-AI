@@ -126,8 +126,8 @@ while not window.has_quit():
         elif keyboard.is_pressed('l'):
             release_all()
             run_right()
-        elif keyboard.is_pressed('a'):
-            saver.save_file('W1-1.sav')
+        '''elif keyboard.is_pressed('a'):
+            saver.save_file('W1-1.sav')'''
     except:
         pass
 
