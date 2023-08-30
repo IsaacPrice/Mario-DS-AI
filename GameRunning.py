@@ -4,6 +4,7 @@ import keyboard
 from DataProccesing import preprocess_image
 from AI import MarioDQN
 from Input import Input
+from DebugInput import DebugInput
 import json 
 
 # Creating the emulator & opening files
@@ -37,6 +38,7 @@ mario_agent = MarioDQN(TOTAL_PIXELS, n_actions, TOTAL_PIXELS)
 
 # Make a class object for the input
 inputs = Input(emu)
+key_inputs = DebugInput(inputs, config_data['Inputs'])
 
 # Action mapping
 action_mapping = {
@@ -68,21 +70,8 @@ while not window.has_quit():
     # Perform the action
     action_mapping[action]()
 
-    # Check for keyboard inputs, and moves if so
-    try:
-        if keyboard.is_pressed('x'):
-            inputs.release_all()
-            inputs.jump()
-        elif keyboard.is_pressed('j'):
-            inputs.release_all()
-            inputs.run_left()
-        elif keyboard.is_pressed('l'):
-            inputs.release_all()
-            inputs.run_right()
-        '''elif keyboard.is_pressed('a'):
-            saver.save_file('W1-1.sav')'''
-    except:
-        pass
+    # Gets the inputs from the user if any
+    key_inputs.Pollkeyboard()
 
     emu.cycle()
     window.draw()
