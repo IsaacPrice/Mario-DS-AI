@@ -1,0 +1,18 @@
+body {
+    background: #FBFEF9;
+    font-family: Arial, Helvetica, sans-serif
+}
+
+h1 {
+    color: #191923;
+}
+
+p {
+    color: #191923;
+}
+
+.GameInformation {
+    background: linear-gradient(#CED3DC 20%, #0E79B2);
+    border-radius: 10px;
+    padding: 10px;
+}
