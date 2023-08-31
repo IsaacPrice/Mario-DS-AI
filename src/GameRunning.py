@@ -5,7 +5,9 @@ from DataProccesing import preprocess_image
 from AI import MarioDQN
 from Input import Input
 from DebugInput import DebugInput
+from Window import GUI
 import json 
+from data_store import window_data
 
 # Creating the emulator & opening files
 emu = DeSmuME()
@@ -65,14 +67,12 @@ while not window.has_quit():
     current_state = frame_stack 
 
     # Choose an action
-    action = mario_agent.choose_action(current_state)
     user_action = key_inputs.PollKeyboard(inputs)
 
     if user_action > 0:
-        print('Using Users')
         action_mapping[user_action]()
     else:
-        print('& Using action')
+        action = mario_agent.choose_action(current_state)
         action_mapping[action]()
     # Gets the inputs from the user if any
 
@@ -88,7 +88,7 @@ while not window.has_quit():
     if dead == True:
         print('Died, restarting...')
         total_reward -= 3
-        saver.load_file('W1-1.sav')
+        saver.load_file('save_files/W1-1.sav')
 
     # Calculate the reward
     # 12288 is the max speed, generally. we will make it less just in case the AI gets too fast
@@ -100,7 +100,9 @@ while not window.has_quit():
     total_reward += reward
     amount += 1
 
+    window_data['game_data']['velocity'] = Movement
+
     if amount % update_every == 0:
         mario_agent.learn(current_state, action, total_reward, frame_stack)
-        print(total_reward, end='\r')
+        window_data['game_data']['reward'] = total_reward
         total_reward = 0

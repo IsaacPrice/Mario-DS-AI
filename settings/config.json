@@ -4,8 +4,8 @@
         "UpdateEveryNFrame" : 3
     },
     "Inputs" : {
-        "left" : "l",
-        "right" : "j",
+        "left" : "j",
+        "right" : "l",
         "sprint" : "a",
         "jump" : "z",
         "save" : "t"
