@@ -1,4 +1,4 @@
-window_data = {
+data = {
     'model_data' : {
         'layers' : [
             ['Dense', 128],
@@ -13,5 +13,6 @@ window_data = {
     'game_data' : {
         'velocity' : 0,
         'reward' : 0
-    }
+    },
+    'running' : 1 # -1 means that it is stopped, 0 means that it is paused, and 1 is currently running
 }

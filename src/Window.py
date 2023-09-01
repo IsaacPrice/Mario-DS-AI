@@ -1,24 +1,21 @@
 from PyQt5.QtWidgets import *
+from data_store import data
 
+def pause_window():
+    data['running'] = 0
 
-# Slot function to handle button click
-class GUI:
-    def __init__(self, variables, current_window_name='main_analysis'):
-        self.app = QApplication([])
-        self.window = QMainWindow()
+def continue_window():
+    data['running'] = 1
 
-        self.window.setWindowTitle('Info')
-        self.window.setGeometry(100, 100, 500, 300)
+def stop_window():
+    data['running'] = -1
 
-        self.widgets = {
-            'reward_label' : QLabel('Reward: ' + str(variables['Reward']))
-        }
+# Create the window
+app = QApplication([])
+window = QMainWindow()
 
-        # Show the window
-        self.window.show()
+# Create the buttons
+pause_button = QPushButton('pause')
+continue_button = QPushButton('continue')
+stop_button = QPushButton('stop')
 
-        # Start the event loop
-        self.app.exec_()
-    
-    def update_variables(self, variables):
-        self.widgets['reward_label'].setText('Reward: ' + str(variables['Reward']))

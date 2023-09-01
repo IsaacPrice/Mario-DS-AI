@@ -7,7 +7,9 @@ from Input import Input
 from DebugInput import DebugInput
 from Window import GUI
 import json 
-from data_store import window_data
+import time
+from PyQt5.QtWidgets import *
+from data_store import data
 
 # Creating the emulator & opening files
 emu = DeSmuME()
@@ -59,6 +61,7 @@ action_mapping = {
 total_reward = 0
 amount = 0
 
+
 # Run the emulation as fast as possible until quit
 while not window.has_quit():
     window.process_input() # Controls are the default DeSmuME controls, which are always wrong
@@ -100,9 +103,16 @@ while not window.has_quit():
     total_reward += reward
     amount += 1
 
-    window_data['game_data']['velocity'] = Movement
+    data['game_data']['velocity'] = Movement
 
     if amount % update_every == 0:
         mario_agent.learn(current_state, action, total_reward, frame_stack)
-        window_data['game_data']['reward'] = total_reward
+        data['game_data']['reward'] = total_reward
         total_reward = 0
+    
+    # Checks the current state of the emulation
+    if data['running'] == 0:
+        while data['running'] != 0:
+            time.sleep(.33)
+    elif data['running'] == -1:
+        pass # TODO: Make this exit the application without saving it it has been closed
