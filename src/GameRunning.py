@@ -5,18 +5,19 @@ from DataProccesing import preprocess_image
 from AI import MarioDQN
 from Input import Input
 from DebugInput import DebugInput
-from Window import GUI
 import json 
 import time
 from PyQt5.QtWidgets import *
 from data_store import data
 
+path = "C:/Programs/Mario-DS-AI/"
+
 # Creating the emulator & opening files
 emu = DeSmuME()
-emu.open('NSMB.nds')
+emu.open(path + 'NSMB.nds')
 window = emu.create_sdl_window()
 saver = DeSmuME_Savestate(emu)
-saver.load_file('save_files/W1-1.sav')
+saver.load_file(path + 'save_files/W1-1.sav')
 mem = DeSmuME_Memory(emu)
 
 
@@ -25,7 +26,7 @@ frames = [] # This will be the list of frames that will be used as the input for
 reward = 0
 
 # Load the config file
-with open('settings/config.json', 'r') as f:
+with open(path + 'settings/config.json', 'r') as f:
     config_data = json.load(f)
 
 # Get the neccisary data from the file
@@ -91,7 +92,7 @@ while not window.has_quit():
     if dead == True:
         print('Died, restarting...')
         total_reward -= 3
-        saver.load_file('save_files/W1-1.sav')
+        saver.load_file(path + 'save_files/W1-1.sav')
 
     # Calculate the reward
     # 12288 is the max speed, generally. we will make it less just in case the AI gets too fast
