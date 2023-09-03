@@ -8,42 +8,9 @@ from DebugInput import DebugInput
 import json 
 import time
 from PyQt5.QtWidgets import *
-from flask import Flask, jsonify, request
-
-data = {
-    'model_data' : {
-        'layers' : [
-            ['Dense', 128],
-            ['Dense', 24],
-            ['Dense', 24],
-            ['Dense', 10]
-        ],
-        'alpha' : 0,
-        'gamma' : 0,
-        'epsilon' : 0
-    },
-    'game_data' : {
-        'velocity' : 0,
-        'reward' : 0
-    },
-    'running' : 1 # -1 means that it is stopped, 0 means that it is paused, and 1 is currently running
-}
 
 def game_AI():
     path = "C:/Programs/Mario-DS-AI/"
-
-    app = Flask(__name__)
-
-    @app.route('/get_data', methods=['GET'])
-    def get_data():
-        return jsonify(data)
-
-    @app.route('/update_data', methods=['POST'])
-    def update_data():
-        key = request.json.get('key')
-        value = request.json.get('value')
-        data[key] = value
-        return jsonify({"message": "Updated successfully"})
     
     app.run()
 
