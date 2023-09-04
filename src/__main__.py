@@ -42,15 +42,3 @@ def run_ai():
         window.update_labels(data['game_data']['actions'])
 
 run_ai()
-
-'''if __name__ == '__main__':
-    multiprocessing.freeze_support()  # Optional, only if you're going to freeze your script into an executable
-    
-    ai_process = multiprocessing.Process(target=run_ai)
-    window_process = multiprocessing.Process(target=run_window)
-
-    ai_process.start()
-    window_process.start()
-
-    ai_process.join()
-    window_process.join()'''
