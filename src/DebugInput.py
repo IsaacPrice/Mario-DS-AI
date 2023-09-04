@@ -6,7 +6,7 @@ class DebugInput:
         self.Input = Input
         self.Mappings = Mappings
     
-    def PollKeyboard(self, Inputs):
+    def poll_keyboard(self, Inputs):
         try:
             if keyboard.is_pressed(self.Mappings['left']) and not keyboard.is_pressed(self.Mappings['sprint']):
                 return 4

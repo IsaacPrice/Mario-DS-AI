@@ -26,7 +26,7 @@ class MarioDQN:
         if np.random.rand() < self.epsilon:
             return randrange(self.n_actions)
         else:
-            return np.argmax(self.model.predict(frame_stack.reshape(1, -1), verbose=0))
+            return self.model.predict(frame_stack.reshape(1, -1), verbose=0)[0]
 
     def learn(self, frame_stack, action, reward, next_frame_stack):
         target = reward + self.gamma * np.max(self.model.predict(next_frame_stack.reshape(1, -1), verbose=0))
@@ -43,4 +43,4 @@ class MarioDQN:
 
     def predict(self, frame_stack):
         stacked_frames_array = np.array(frame_stack).reshape(-1)  # Flatten the deque into a single numpy array
-        return np.argmax(self.model.predict(stacked_frames_array.reshape(1, -1), verbose=0))
+        return self.model.predict(stacked_frames_array.reshape(1, -1), verbose=0)
