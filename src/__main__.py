@@ -16,18 +16,21 @@ data = {
         ],
         'alpha' : 0,
         'gamma' : 0,
-        'epsilon' : 0
+        'epsilon' : 0,
+        'save_every' : 108 # This is every half hour if going at 60fps
     },
     'game_data' : {
         'actions' : np.array(np_stupid),
         'velocity' : 0,
-        'reward' : 0
+        'reward' : 0,
+        'save?' : 0
     }
 }
 
 def run_ai():
     game = GameLoop()
     window = Window()
+    total_frames = 0
 
     # Keep on updating the game
     while True:
@@ -38,7 +41,11 @@ def run_ai():
             pass # TODO: Make this close everything without any errors
         else: 
             data['game_data'] = temp_data
-        
+
+        total_frames += 1
+        if total_frames % data['model_data']['save_every'] == 0:
+            data['game_data']['save?'] = 1
         window.update_labels(data['game_data']['actions'])
+
 
 run_ai()

@@ -102,6 +102,9 @@ class GameLoop:
             self.mario_agent.learn(self.current_state, action, self.total_reward, self.frame_stack)
             self.total_reward = 0
             self.amount = 0
+        
+        if game_data['save?'] == 1:
+            self.mario_agent.save()
 
         return game_data            
 

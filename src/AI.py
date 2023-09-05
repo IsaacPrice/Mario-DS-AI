@@ -10,7 +10,10 @@ class MarioDQN:
         self.gamma = gamma
         self.epsilon = epsilon
         self.TOTAL_PIXELS = TOTAL_PIXELS
-        self.model = self.build_model()
+        try:
+            self.model = tf.keras.models.load_model('models/model.h5')
+        except:
+            self.model = self.build_model()
 
     def build_model(self):
         model = tf.keras.Sequential([
@@ -44,3 +47,6 @@ class MarioDQN:
     def predict(self, frame_stack):
         stacked_frames_array = np.array(frame_stack).reshape(-1)  # Flatten the deque into a single numpy array
         return self.model.predict(stacked_frames_array.reshape(1, -1), verbose=0)
+
+    def save(self):
+        self.model.save('models/model')
