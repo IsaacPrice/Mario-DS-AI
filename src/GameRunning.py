@@ -8,7 +8,7 @@ import random
 import json 
 from PyQt5.QtWidgets import *
 
-levels = ['W1-1.sav', 'W1-2.sav', 'W1-3.sav', 'W1-4.sav', 'W2-1.sav', 'W2-2.sav', 'W4-1.sav', 'W4-2.sav']
+levels = ['W1-1.sav', 'W1-2.sav', 'W1-3.sav', 'W1-4.sav', 'W1-5.sav', 'W2-1.sav', 'W2-2.sav', 'W4-1.sav', 'W4-2.sav']
 
 class GameLoop:
     def __init__(self, filepath='C:/Programs/Mario-DS-AI/'):
@@ -95,7 +95,7 @@ class GameLoop:
         # Punishes the AI when mario dies and restarts the level
         if dead: 
             self.total_reward -= 3
-            self.saver.load_file(self.filepath + 'save_files/basic levels/' + levels[random.randint(0, 7)])
+            self.saver.load_file(self.filepath + 'save_files/basic levels/' + levels[random.randint(0, 8)])
 
         # Get the reward
         self.movement = (self.emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000) * game_data['reward_calc']['movement']
