@@ -4,8 +4,11 @@ from DataProccesing import preprocess_image
 from AI import MarioDQN
 from Input import Input
 from DebugInput import DebugInput
+import random
 import json 
 from PyQt5.QtWidgets import *
+
+levels = ['W1-1.sav', 'W1-2.sav', 'W1-3.sav', 'W1-4.sav', 'W2-1.sav', 'W2-2.sav', 'W4-1.sav', 'W4-2.sav']
 
 class GameLoop:
     def __init__(self, filepath='C:/Programs/Mario-DS-AI/'):
@@ -18,7 +21,7 @@ class GameLoop:
         self.saver = DeSmuME_Savestate(self.emu)
         
         # Load the game
-        self.saver.load_file(self.filepath + 'save_files/W1-1.sav')
+        self.saver.load_file(self.filepath + 'save_files/basic levels/W1-1.sav')
 
         # Load the config from JSON file
         with open(self.filepath + 'settings/config.json', 'r') as f:
@@ -64,9 +67,11 @@ class GameLoop:
 
         self.current_state = self.frame_stack # Create a previous state for learning
 
-        # Get the coins before the emulator does stuff
+        # Get the coins and size before the emulator does stuff
         self.coins = self.emu.memory.unsigned[0x0208B37C]
-        
+        self.size = self.emu.memory.unsigned[0x021B7188]
+        self.points = self.emu.memory.unsigned[0x0208B384:0x0208B388:4][0]
+
         # Deal with inputs
         action = self.key_inputs.poll_keyboard(self.inputs)
         self.confidence = self.mario_agent.choose_action(self.current_state) # This is how much the AI wants to take each action
@@ -90,14 +95,17 @@ class GameLoop:
         # Punishes the AI when mario dies and restarts the level
         if dead: 
             self.total_reward -= 3
-            self.saver.load_file(self.filepath + 'save_files/W1-1.sav')
+            self.saver.load_file(self.filepath + 'save_files/basic levels/' + levels[random.randint(0, 7)])
 
         # Get the reward
         self.movement = (self.emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000) * game_data['reward_calc']['movement']
-        self.coin_reward = (self.coins - self.emu.memory.unsigned[0x0208B37C]) * game_data['reward_calc']['coins']
-        self
-        
-        self.reward -= .1
+        self.coin_reward = (self.emu.memory.unsigned[0x0208B37C] - self.coins) * game_data['reward_calc']['coins']
+        # Current powerup: 0 small, 1 tall, 2 fire, 3 huge, 4 shell
+        self.size = (self.emu.memory.unsigned[0x021B7188] - self.size) * game_data['reward_calc']['power-up']
+        self.points = (self.emu.memory.unsigned[0x0208B384:0x0208B388:4][0]) * game_data['reward_calc']['points-scale']
+
+        self.points = 0
+        self.reward = self.coin_reward + self.movement + self.size + self.points - .1
 
         self.total_reward += self.reward
         self.amount += 1

@@ -16,9 +16,10 @@ data = {
         'reward' : 0,
         'save?' : 0,
         'reward_calc' : {
-            'coins' : .2,
-            'movement' : .3,
-            'power-up' : .2
+            'coins' : .5,
+            'movement' : .7,
+            'power-up' : 1,
+            'points-scale' : .01 # A coin is 100, killng an enemy is 200 * streak, powerup is ---, and there are other important 
         }
     }
 }
