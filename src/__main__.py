@@ -8,22 +8,18 @@ np_stupid = [0, 0, 0, 0, 0, 0, 0, 0]
 data = {
     'model_data' : {
         'running' : 1, # -1 means that it is stopped, 0 means that it is paused, and 1 is currently running
-        'layers' : [
-            ['Dense', 128],
-            ['Dense', 24],
-            ['Dense', 24],
-            ['Dense', 10]
-        ],
-        'alpha' : 0,
-        'gamma' : 0,
-        'epsilon' : 0,
-        'save_every' : 108 # This is every half hour if going at 60fps
+        'save_every' : 108000 # This is every half hour if going at 60fps
     },
     'game_data' : {
         'actions' : np.array(np_stupid),
         'velocity' : 0,
         'reward' : 0,
-        'save?' : 0
+        'save?' : 0,
+        'reward_calc' : {
+            'coins' : .2,
+            'movement' : .3,
+            'power-up' : .2
+        }
     }
 }
 

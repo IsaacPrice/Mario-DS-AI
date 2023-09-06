@@ -11,7 +11,7 @@ class MarioDQN:
         self.epsilon = epsilon
         self.TOTAL_PIXELS = TOTAL_PIXELS
         try:
-            self.model = tf.keras.models.load_model('models/model.h5')
+            self.model = tf.keras.models.load_model('models/model')
         except:
             self.model = self.build_model()
 

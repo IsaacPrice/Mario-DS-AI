@@ -63,6 +63,9 @@ class GameLoop:
         self.window.process_input()
 
         self.current_state = self.frame_stack # Create a previous state for learning
+
+        # Get the coins before the emulator does stuff
+        self.coins = self.emu.memory.unsigned[0x0208B37C]
         
         # Deal with inputs
         action = self.key_inputs.poll_keyboard(self.inputs)
@@ -90,8 +93,10 @@ class GameLoop:
             self.saver.load_file(self.filepath + 'save_files/W1-1.sav')
 
         # Get the reward
-        self.movement = self.emu.memory.signed[0x021B6A90:0x021B6A90:4]
-        self.reward = self.movement / 20000
+        self.movement = (self.emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000) * game_data['reward_calc']['movement']
+        self.coin_reward = (self.coins - self.emu.memory.unsigned[0x0208B37C]) * game_data['reward_calc']['coins']
+        self
+        
         self.reward -= .1
 
         self.total_reward += self.reward
@@ -105,101 +110,7 @@ class GameLoop:
         
         if game_data['save?'] == 1:
             self.mario_agent.save()
+            game_data['save?'] = 0
 
-        return game_data            
-
-
-'''def game_AI():
-    path = "C:/Programs/Mario-DS-AI/"
+        return game_data 
     
-    # Creating the emulator & opening files
-    emu = DeSmuME()
-    emu.open(path + 'NSMB.nds')
-    window = emu.create_sdl_window()
-    saver = DeSmuME_Savestate(emu)
-    saver.load_file(path + 'save_files/W1-1.sav')
-
-    # DATA FOR THE AI
-    reward = 0
-    total_reward = 0
-    amount = 0
-
-    # Load the config file
-    with open(path + 'settings/config.json', 'r') as f:
-        config_data = json.load(f)
-
-    # Get the neccisary data from the file
-    AMOUNT_OF_FRAMES = config_data['ModelSettings']['FrameStackAmount']
-    update_every = config_data['ModelSettings']['UpdateEveryNFrame']
-
-    # Get the input shape and base values 
-    TOTAL_PIXELS = AMOUNT_OF_FRAMES * 7056
-    frame_stack = np.zeros(TOTAL_PIXELS)
-    n_actions = 7  # The number of actions the AI can take
-
-    # Creat the AI
-    mario_agent = MarioDQN(TOTAL_PIXELS, n_actions, TOTAL_PIXELS)
-
-    # Make a class object for the input
-    inputs = Input(emu)
-    key_inputs = DebugInput(inputs, config_data['Inputs'])
-
-    # Action mapping
-    action_mapping = {
-        0: inputs.none,
-        1: inputs.walk_left,
-        2: inputs.walk_right,
-        3: inputs.run_left,
-        4: inputs.run_right,
-        5: inputs.jump,
-        6: inputs.jump_left,
-        7: inputs.jump_right
-    }
-
-
-    # Run the emulation as fast as possible until quit
-    while not window.has_quit():
-        window.process_input() # Controls are the default DeSmuME controls, which are always wrong
-        
-        # Get the current state (stacked frames)
-        current_state = frame_stack 
-
-        # Choose an action
-        user_action = key_inputs.poll_keyboard(inputs)
-
-        if user_action > 0:
-            action_mapping[user_action]()
-        else:
-            action = mario_agent.choose_action(current_state)
-            action_mapping[action]()
-        # Gets the inputs from the user if any
-
-        emu.cycle()
-        window.draw()
-
-        # Update the current previous 5 frames
-        frame = emu.screenshot()
-        processed_frame, dead = preprocess_image(frame)
-        frame_stack = frame_stack[7056:]
-        frame_stack = np.append(frame_stack, processed_frame)
-
-        if dead == True:
-            print('Died, restarting...')
-            total_reward -= 3
-            saver.load_file(path + 'save_files/W1-1.sav')
-
-        # Calculate the reward
-        # 12288 is the max speed, generally. we will make it less just in case the AI gets too fast
-        Movement = emu.memory.signed[0x021B6A90:0x021B6A90:4]
-
-        reward = Movement / 20000 # Get the reward just from the movement
-        reward = reward - 0.1 # Punish the AI for not moving
-
-        total_reward += reward
-        amount += 1
-
-        if amount % update_every == 0:
-            mario_agent.learn(current_state, action, total_reward, frame_stack)
-            total_reward = 0
-
-game_AI()'''
