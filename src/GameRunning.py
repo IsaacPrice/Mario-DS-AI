@@ -108,7 +108,7 @@ class GameLoop:
         self.points = (self.emu.memory.unsigned[0x0208B384:0x0208B388:4][0]) * game_data['reward_calc']['points-scale']
 
         self.points = 0
-        self.reward = self.coin_reward + (self.movement * game_data['reward_calc']['movement']) + self.size + self.points
+        self.reward = self.coin_reward + (self.movement * game_data['reward_calc']['movement']) + self.size + self.points - 0.05
 
         self.total_reward += self.reward
         self.amount += 1

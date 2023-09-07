@@ -67,7 +67,28 @@ class Dashboard:
                     print(f"{action_row}  |  {q_value_row}")
         
         print('1 2 3 4 5 6 7 8  |  1 2 3 4 5 6 7 8')
-            
+
+        actionst = data.get('actions', [])
+        try: 
+            print(f"\n1 - Nothing: {actionst[0]}")
+            print(f"2 - Walk Left: {actionst[1]}")
+            print(f"3 - Walk Right: {actionst[2]}")
+            print(f"4 - Run Left: {actionst[3]}")
+            print(f"5 - Run Right: {actionst[4]}")
+            print(f"6 - Jump: {actionst[5]}")
+            print(f"7 - Jump Left: {actionst[6]}")
+            print(f"8 - Jump Right: {actionst[7]}")
+            self.old = actionst
+        except:
+            actionst = self.old
+            print(f"\n1 - Nothing: {actionst[0]}")
+            print(f"2 - Walk Left: {actionst[1]}")
+            print(f"3 - Walk Right: {actionst[2]}")
+            print(f"4 - Run Left: {actionst[3]}")
+            print(f"5 - Run Right: {actionst[4]}")
+            print(f"6 - Jump: {actionst[5]}")
+            print(f"7 - Jump Left: {actionst[6]}")
+            print(f"8 - Jump Right: {actionst[7]}")
 
         print("\nAdditional Info:")
         print(f"Velocity: {data.get('velocity', 'N/A')}")
