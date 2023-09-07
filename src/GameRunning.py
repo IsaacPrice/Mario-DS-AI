@@ -12,7 +12,7 @@ levels = ['W1-1.sav', 'W1-2.sav', 'W1-3.sav', 'W1-4.sav', 'W1-5.sav', 'W2-1.sav'
 
 class GameLoop:
     def __init__(self, filepath='C:/Programs/Mario-DS-AI/'):
-        self.filepath = filepath
+        self.filepath = 'C:/Programs/Mario-DS-AI/'
 
         # Create the emulator, game window, and saver
         self.emu = DeSmuME()
@@ -95,24 +95,31 @@ class GameLoop:
         # Punishes the AI when mario dies and restarts the level
         if dead: 
             self.total_reward -= 3
-            self.saver.load_file(self.filepath + 'save_files/basic levels/' + levels[random.randint(0, 8)])
+            level = random.randint(0, 8)
+            self.saver.load_file(self.filepath + 'save_files/basic levels/' + levels[level])
+            game_data['total_reward'] = 0
+            game_data['level'] = levels[level]
 
         # Get the reward
-        self.movement = (self.emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000) * game_data['reward_calc']['movement']
+        self.movement = (self.emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000)
         self.coin_reward = (self.emu.memory.unsigned[0x0208B37C] - self.coins) * game_data['reward_calc']['coins']
         # Current powerup: 0 small, 1 tall, 2 fire, 3 huge, 4 shell
         self.size = (self.emu.memory.unsigned[0x021B7188] - self.size) * game_data['reward_calc']['power-up']
         self.points = (self.emu.memory.unsigned[0x0208B384:0x0208B388:4][0]) * game_data['reward_calc']['points-scale']
 
         self.points = 0
-        self.reward = self.coin_reward + self.movement + self.size + self.points - .1
+        self.reward = self.coin_reward + (self.movement * game_data['reward_calc']['movement']) + self.size + self.points
 
         self.total_reward += self.reward
         self.amount += 1
 
+        game_data['reward'] = self.reward
+        game_data['velocity'] = self.movement
+
         # Update the AI when neccisary
         if self.amount % self.UPDATE_EVERY == 0:
             self.mario_agent.learn(self.current_state, action, self.total_reward, self.frame_stack)
+            game_data['total_reward'] += self.total_reward
             self.total_reward = 0
             self.amount = 0
         

@@ -1,9 +1,6 @@
 from GameRunning import GameLoop
-from Window import Window
+from console import Dashboard
 import numpy as np
-import multiprocessing
-
-np_stupid = [0, 0, 0, 0, 0, 0, 0, 0]
 
 data = {
     'model_data' : {
@@ -11,10 +8,14 @@ data = {
         'save_every' : 108000 # This is every half hour if going at 60fps
     },
     'game_data' : {
-        'actions' : np.array(np_stupid),
+        'actions' : np.array([0, 0, 0, 0, 0, 0, 0, 0]),
+        'q-values' : np.array([0, 0, 0, 0, 0, 0, 0, 0]),
         'velocity' : 0,
         'reward' : 0,
+        'total_reward' : 0,
         'save?' : 0,
+        'level' : 'W1-1.sav',
+        'died' : 0,
         'reward_calc' : {
             'coins' : .5,
             'movement' : .7,
@@ -24,14 +25,31 @@ data = {
     }
 }
 
+# This is to organize all of the random data that could be useful to analyze and see where it's going wrong
+class Info:
+    def __init__(self, exclude=None):
+        self.rewards_per_episodes = np.array([])
+        self.rewards_per_frame = np.array([])
+    
+    def update_per_frame(self, reward):
+        self.rewards_per_frame.insert(reward)
+
+    def update_per_episode(self, reward):
+        self.rewards_per_episodes.insert(reward)
+
+    def save(self, filepath):
+        pass # TODO: Have this convert current data into a pandas dataframe and then write it to a file
+
 def run_ai():
     game = GameLoop()
-    window = Window()
+    dashboard = Dashboard()
+    info = Info()
     total_frames = 0
 
     # Keep on updating the game
     while True:
         temp_data = game.cycle(data['game_data'])
+        died = data['game_data']['died']
 
         # Check if the user wanted to close the game
         if temp_data is None:
@@ -39,10 +57,16 @@ def run_ai():
         else: 
             data['game_data'] = temp_data
 
+        # This will save the model whenever it has been a bit of time
         total_frames += 1
         if total_frames % data['model_data']['save_every'] == 0:
             data['game_data']['save?'] = 1
-        window.update_labels(data['game_data']['actions'])
 
+        # Update the console window
+        dashboard.update(data['game_data'])
+        
+        # This will add the data for the episode to store
+        if died == 1:
+            info.rewards_per_episodes(data['game_data']['total_reward'])
 
 run_ai()
