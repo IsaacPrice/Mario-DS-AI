@@ -19,7 +19,6 @@ class MarioDQN:
         model = tf.keras.Sequential([
             tf.keras.layers.Dense(128, activation='relu', input_shape=(self.TOTAL_PIXELS,)),
             tf.keras.layers.Dense(24, activation='relu'),
-            tf.keras.layers.Dense(24, activation='relu'),
             tf.keras.layers.Dense(self.n_actions, activation='linear')
         ])
         model.compile(optimizer='adam', loss='mse')
@@ -43,6 +42,7 @@ class MarioDQN:
 
         grads = tape.gradient(loss, self.model.trainable_variables)
         self.model.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
+        return target
 
     def predict(self, frame_stack):
         stacked_frames_array = np.array(frame_stack).reshape(-1)  # Flatten the deque into a single numpy array

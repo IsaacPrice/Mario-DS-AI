@@ -2,6 +2,17 @@ import os
 import numpy as np
 import curses
 
+action_mapping = {
+    1 : "1 - Nothing: ",
+    2 : "2 - Walk Left: ",
+    3 : "3 - Walk Right: ",
+    4 : "4 - Run Left: ",
+    5 : "5 - Run Right: ",
+    6 : "6 - Jump: ",
+    7 : "7 - Jump Left: ",
+    8 : "8 - Jump Right: "
+}
+
 class Dashboard:
     def __init__(self, max_height=10):
         self.max_height = max_height
@@ -36,6 +47,7 @@ class Dashboard:
         try:
             os.system('cls' if os.name == 'nt' else 'clear')
             actions = self.scale_values(data.get('actions', []))
+            actions_raw = data.get('actions', [])
             q_values = self.scale_values(data.get('q-values', []))
 
             max_action = np.max(actions)
@@ -46,6 +58,10 @@ class Dashboard:
                 for i in range(self.max_height, 0, -1):
                     action_row = self.generate_row(actions, i, max_action)
                     q_value_row = self.generate_row(q_values, i, max_q_value)
+                    #exact = action_mapping[i + 1] + str(actions_raw[i])
+                    '''if i <= 7:
+                        print(f"{action_row}  |  {q_value_row}   {exact}")
+                    else: '''
                     print(f"{action_row}  |  {q_value_row}")
             
             self.prev_actions = actions
@@ -54,6 +70,7 @@ class Dashboard:
         except Exception as e:
             os.system('cls' if os.name == 'nt' else 'clear')
             actions = self.prev_actions
+            actions_raw = data.get('actions', [])
             q_values = self.prev_q_values
 
             max_action = np.max(actions)
@@ -64,31 +81,13 @@ class Dashboard:
                 for i in range(self.max_height, 0, -1):
                     action_row = self.generate_row(actions, i, max_action)
                     q_value_row = self.generate_row(q_values, i, max_q_value)
+                    '''exact = action_mapping[i + 1] + str(actions_raw[i])
+                    if i <= 7:
+                        print(f"{action_row}  |  {q_value_row}   {exact}")
+                    else: '''
                     print(f"{action_row}  |  {q_value_row}")
         
         print('1 2 3 4 5 6 7 8  |  1 2 3 4 5 6 7 8')
-
-        actionst = data.get('actions', [])
-        try: 
-            print(f"\n1 - Nothing: {actionst[0]}")
-            print(f"2 - Walk Left: {actionst[1]}")
-            print(f"3 - Walk Right: {actionst[2]}")
-            print(f"4 - Run Left: {actionst[3]}")
-            print(f"5 - Run Right: {actionst[4]}")
-            print(f"6 - Jump: {actionst[5]}")
-            print(f"7 - Jump Left: {actionst[6]}")
-            print(f"8 - Jump Right: {actionst[7]}")
-            self.old = actionst
-        except:
-            actionst = self.old
-            print(f"\n1 - Nothing: {actionst[0]}")
-            print(f"2 - Walk Left: {actionst[1]}")
-            print(f"3 - Walk Right: {actionst[2]}")
-            print(f"4 - Run Left: {actionst[3]}")
-            print(f"5 - Run Right: {actionst[4]}")
-            print(f"6 - Jump: {actionst[5]}")
-            print(f"7 - Jump Left: {actionst[6]}")
-            print(f"8 - Jump Right: {actionst[7]}")
 
         print("\nAdditional Info:")
         print(f"Velocity: {data.get('velocity', 'N/A')}")
