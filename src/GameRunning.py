@@ -118,8 +118,9 @@ class GameLoop:
 
         # Update the AI when neccisary
         if self.amount % self.UPDATE_EVERY == 0:
-            self.mario_agent.learn(self.current_state, action, self.total_reward, self.frame_stack)
+            q_values = self.mario_agent.learn(self.current_state, action, self.total_reward, self.frame_stack)
             game_data['total_reward'] += self.total_reward
+            game_data['q_values'] = q_values
             self.total_reward = 0
             self.amount = 0
         

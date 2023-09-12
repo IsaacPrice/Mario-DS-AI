@@ -3,14 +3,14 @@ import numpy as np
 import curses
 
 action_mapping = {
-    1 : "1 - Nothing: ",
-    2 : "2 - Walk Left: ",
-    3 : "3 - Walk Right: ",
-    4 : "4 - Run Left: ",
-    5 : "5 - Run Right: ",
-    6 : "6 - Jump: ",
-    7 : "7 - Jump Left: ",
-    8 : "8 - Jump Right: "
+    0 : "1 - Nothing: ",
+    1 : "2 - Walk Left: ",
+    2 : "3 - Walk Right: ",
+    3 : "4 - Run Left: ",
+    4 : "5 - Run Right: ",
+    5 : "6 - Jump: ",
+    6 : "7 - Jump Left: ",
+    7 : "8 - Jump Right: "
 }
 
 class Dashboard:
@@ -36,7 +36,7 @@ class Dashboard:
                 row.append("\033[92m█\033[0m")  # Green
             elif val >= i:
                 row.append("\033[97m█\033[0m")  # White
-            elif i <= 1 and val <= 0:
+            elif i <= 1 and val <= 10:
                 row.append("_")  # underscore for zero or less
             else:
                 row.append(" ")  # blank
@@ -48,7 +48,7 @@ class Dashboard:
             os.system('cls' if os.name == 'nt' else 'clear')
             actions = self.scale_values(data.get('actions', []))
             actions_raw = data.get('actions', [])
-            q_values = self.scale_values(data.get('q-values', []))
+            q_values = self.scale_values(data.get('q_values', []))
 
             max_action = np.max(actions)
             max_q_value = np.max(q_values)
@@ -58,11 +58,9 @@ class Dashboard:
                 for i in range(self.max_height, 0, -1):
                     action_row = self.generate_row(actions, i, max_action)
                     q_value_row = self.generate_row(q_values, i, max_q_value)
-                    #exact = action_mapping[i + 1] + str(actions_raw[i])
-                    '''if i <= 7:
-                        print(f"{action_row}  |  {q_value_row}   {exact}")
-                    else: '''
+                    #exact = action_mapping[i] + str(actions_raw[i])
                     print(f"{action_row}  |  {q_value_row}")
+                    
             
             self.prev_actions = actions
             self.prev_q_values = q_values

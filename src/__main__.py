@@ -9,7 +9,7 @@ data = {
     },
     'game_data' : {
         'actions' : np.array([0, 0, 0, 0, 0, 0, 0, 0]),
-        'q-values' : np.array([0, 0, 0, 0, 0, 0, 0, 0]),
+        'q_values' : np.array([0, 0, 0, 0, 0, 0, 0, 0]),
         'velocity' : 0,
         'reward' : 0,
         'total_reward' : 0,
