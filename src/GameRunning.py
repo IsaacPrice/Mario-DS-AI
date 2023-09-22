@@ -12,7 +12,7 @@ levels = ['W1-1.sav', 'W1-2.sav', 'W1-3.sav', 'W1-5.sav', 'W2-2.sav', 'W4-2.sav'
 
 class GameLoop:
     def __init__(self, filepath='C:/Programs/Mario-DS-AI/'):
-        self.filepath = 'C:/Programs/Mario-DS-AI/'
+        self.filepath = filepath
 
         # Create the emulator, game window, and saver
         self.emu = DeSmuME()
