@@ -47,7 +47,6 @@ class Dashboard:
         try:
             os.system('cls' if os.name == 'nt' else 'clear')
             actions = self.scale_values(data.get('actions', []))
-            actions_raw = data.get('actions', [])
             q_values = self.scale_values(data.get('q_values', []))
 
             max_action = np.max(actions)
@@ -85,7 +84,31 @@ class Dashboard:
                     else: '''
                     print(f"{action_row}  |  {q_value_row}")
         
-        print('1 2 3 4 5 6 7 8  |  1 2 3 4 5 6 7 8')
+        print('1 2 3 4 5 6 7 8  |  1 2 3 4 5 6 7 8\n')
+
+        actions_raw = data.get('actions', [])
+
+        try:
+            print(actions_raw[0])
+            print(actions_raw[1])
+            print(actions_raw[2])
+            print(actions_raw[3])
+            print(actions_raw[4])
+            print(actions_raw[5])
+            print(actions_raw[6])
+            print(actions_raw[7])
+            self.backs = actions_raw
+        except:
+            back = self.backs
+            print(back[0])
+            print(back[1])
+            print(back[2])
+            print(back[3])
+            print(back[4])
+            print(back[5])
+            print(back[6])
+            print(back[7])
+
 
         print("\nAdditional Info:")
         print(f"Velocity: {data.get('velocity', 'N/A')}")

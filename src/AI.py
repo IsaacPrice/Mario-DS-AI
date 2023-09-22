@@ -17,9 +17,18 @@ class MarioDQN:
 
     def build_model(self):
         model = tf.keras.Sequential([
-            tf.keras.layers.Dense(128, activation='relu', input_shape=(self.TOTAL_PIXELS,)),
-            tf.keras.layers.Dense(24, activation='relu'),
-            tf.keras.layers.Dense(self.n_actions, activation='linear')
+            tf.keras.layers.Dense(128, input_shape=(self.TOTAL_PIXELS,)),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Activation('swish'),
+            tf.keras.layers.Dropout(.5),
+            tf.keras.layers.Dense(64),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Activation('swish'),
+            tf.keras.layers.Dropout(.5),
+            tf.keras.layers.Dense(24),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Activation('swish'),
+            tf.keras.layers.Dense(self.n_actions, activation=tf.keras.layers.LeakyReLU(alpha=0.001))  # or keep LeakyReLU depending on your needs
         ])
         model.compile(optimizer='adam', loss='mse')
         return model

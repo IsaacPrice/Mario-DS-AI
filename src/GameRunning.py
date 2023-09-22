@@ -8,7 +8,7 @@ import random
 import json 
 from PyQt5.QtWidgets import *
 
-levels = ['W1-1.sav', 'W1-2.sav', 'W1-3.sav', 'W1-4.sav', 'W1-5.sav', 'W2-1.sav', 'W2-2.sav', 'W4-1.sav', 'W4-2.sav']
+levels = ['W1-1.sav', 'W1-2.sav', 'W1-3.sav', 'W1-5.sav', 'W2-2.sav', 'W4-2.sav']
 
 class GameLoop:
     def __init__(self, filepath='C:/Programs/Mario-DS-AI/'):
@@ -64,8 +64,8 @@ class GameLoop:
 
         # This will get certain inputs from the window
         self.window.process_input()
-
-        self.current_state = self.frame_stack # Create a previous state for learning
+        if self.amount == 0:
+            self.current_state = self.frame_stack # Create a previous state for learning
 
         # Get the coins and size before the emulator does stuff
         self.coins = self.emu.memory.unsigned[0x0208B37C]
@@ -73,14 +73,18 @@ class GameLoop:
         self.points = self.emu.memory.unsigned[0x0208B384:0x0208B388:4][0]
 
         # Deal with inputs
-        action = self.key_inputs.poll_keyboard(self.inputs)
-        self.confidence = self.mario_agent.choose_action(self.current_state) # This is how much the AI wants to take each action
-        if action == 0:
-            action = np.argmax(self.confidence)
-        self.action_mapping[action]()
+        if self.amount == 0:
+            self.action = self.key_inputs.poll_keyboard(self.inputs)
+            self.confidence = self.mario_agent.choose_action(self.current_state) # This is how much the AI wants to take each action
+            if self.action == 0:
+                self.action = np.argmax(self.confidence)
+            
+            self.action_mapping[self.action]()
 
-        # Update the data
-        game_data['actions'] = self.confidence
+            # Update the data
+            game_data['actions'] = self.confidence
+
+        self.action_mapping[self.action]()
 
         # Move the emulator along
         self.emu.cycle()
@@ -108,7 +112,7 @@ class GameLoop:
         self.points = (self.emu.memory.unsigned[0x0208B384:0x0208B388:4][0]) * game_data['reward_calc']['points-scale']
 
         self.points = 0
-        self.reward = self.coin_reward + (self.movement * game_data['reward_calc']['movement']) + self.size + self.points - 0.05
+        self.reward = self.coin_reward + (self.movement * game_data['reward_calc']['movement']) + self.size + self.points
 
         self.total_reward += self.reward
         self.amount += 1
@@ -118,7 +122,7 @@ class GameLoop:
 
         # Update the AI when neccisary
         if self.amount % self.UPDATE_EVERY == 0:
-            q_values = self.mario_agent.learn(self.current_state, action, self.total_reward, self.frame_stack)
+            q_values = self.mario_agent.learn(self.current_state, self.action, self.total_reward, self.frame_stack)
             game_data['total_reward'] += self.total_reward
             game_data['q_values'] = q_values
             self.total_reward = 0
