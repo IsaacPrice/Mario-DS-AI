@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import curses
 
 action_mapping = {
     0 : "1 - Nothing: ",
