@@ -40,7 +40,7 @@ class GameLoop:
         self.n_actions = 8
 
         # Create the AI
-        self.mario_agent = MarioDQN(self.TOTAL_PIXELS, self.n_actions, self.TOTAL_PIXELS)
+        self.mario_agent = MarioDQN(self.TOTAL_PIXELS, self.n_actions, self.TOTAL_PIXELS, epsilon=.2)
 
         # Create inputs
         self.inputs = Input(self.emu)
@@ -99,8 +99,8 @@ class GameLoop:
         # Punishes the AI when mario dies and restarts the level
         if dead: 
             self.total_reward -= 3
-            level = random.randint(0, 8)
-            self.saver.load_file(self.filepath + 'save_files/basic levels/' + levels[level])
+            level = random.randint(0, 5)
+            self.saver.load_file(self.filepath + 'save_files/basic levels/W1-1.sav')
             game_data['total_reward'] = 0
             game_data['level'] = levels[level]
 

@@ -41,7 +41,7 @@ class Info:
         pass # TODO: Have this convert current data into a pandas dataframe and then write it to a file
 
 def run_ai():
-    game = GameLoop()
+    game = GameLoop('C:/Users/jpric/OneDrive/Desktop/poopoo/Mario-DS-AI/')
     dashboard = Dashboard()
     info = Info()
     total_frames = 0
