@@ -24,23 +24,22 @@ class DQN:
             self.model = model_structure
 
     def _predict_single_state(self, state):
-        return self.model.predict(state.reshape(1, 84, 84, 4), verbose=0)  # Updated shape
+        return self.model.predict(state, verbose=0)  # Updated shape
 
     def choose_action(self, state):
         if np.random.rand() < self.epsilon:
             return random.randrange(self.n_actions)
         else:
-            q_values = self._predict_single_state(state)
+            q_values = self.model.predict(state, verbose=0)  # Updated shape
             return np.argmax(q_values)
     
     # This will learn with the given actions and states, and will return the Q-values
     def learn(self, state, action, reward, next_state, total_reward,  episode):
-        self.total_reward += reward
-        target = np.array(reward+self.gamma * np.max(self.model.predict(next_state.reshape(1, -1), verbose=0)))
+        target = np.array(reward+self.gamma * np.max(self.model.predict(next_state, verbose=0)))
 
         with tf.GradientTape() as tape:
             tape.watch(self.model.trainable_variables)
-            predicted = self.model(state.reshape(1, -1))[0][action]
+            predicted = self.model(state)[0][action]
             predicted = tf.reshape(predicted, (1,)) # Ensure its a 1D tensor
             loss = tf.keras.losses.mean_squared_error(target, predicted)
 
@@ -54,10 +53,13 @@ class DQN:
         return target
 
     def predict(self, state):
-        return self.model.predict(state.reshape(1, -1), verbose=0)
+        return self.model.predict(state, verbose=0)
 
     def save(self, path=''):
         self.model.save(path)
+        
+    def set_epsilon(self, epsilon):
+        self.epsilon = epsilon
 
 
 
@@ -86,8 +88,7 @@ class DoubleDQN:
             self.target_model.set_weights(self.model.get_weights())
 
     def _predict_single_state(self, state):
-        state_array = np.array(state)  # Convert tuple or list to np.array if needed
-        return self.model.predict(state_array.reshape(1, 84, 84, 4), verbose=0)  # Updated shape
+        return self.model.predict(state, verbose=0)  # Updated shape
 
 
     def choose_action(self, state):
@@ -100,15 +101,15 @@ class DoubleDQN:
     # This will learn with the given actions and states, and will return the Q-values
     def learn(self, state, action, reward, next_state, total_reward, episode):
         # Use the Online Network to find the best action for the next state
-        best_action = np.argmax(self.model.predict(next_state.reshape(1, -1), verbose=0))
-        
+        best_action = np.argmax(self.model.predict(next_state, verbose=0))
+
         # Use the Target Network to find the Q-value of the chosen action
-        target = reward + self.gamma * self.target_model.predict(next_state.reshape(1, -1), verbose=0)[0][best_action]
+        target = reward + self.gamma * self.target_model.predict(next_state, verbose=0)[0][best_action]
         
         # Existing code to update Online Network
         with tf.GradientTape() as tape:
             tape.watch(self.model.trainable_variables)
-            predicted = self.model(state.reshape(1, -1))[0][action]
+            predicted = self.model(state)[0][action]
             predicted = tf.reshape(predicted, (1,))
             loss = tf.keras.losses.mean_squared_error(target, predicted)
 
@@ -122,7 +123,7 @@ class DoubleDQN:
         return target
 
     def predict(self, state):
-        return self.model.predict(state.reshape(1, -1), verbose=0)
+        return self.model.predict(state, verbose=0)
 
     def save(self, path=''):
         self.model.save(path)
@@ -131,9 +132,20 @@ class DoubleDQN:
         self.target_model.set_weights(self.model.get_weights())
     
     def soft_update(self, tau=0.005):
-        online_weights = np.array(self.model.get_weights())
-        target_weights = np.array(self.target_model.get_weights())
-        new_weights = tau * online_weights + (1 - tau) * target_weights
+        online_weights = self.model.get_weights()
+        target_weights = self.target_model.get_weights()
+        
+        # Make sure both sets of weights have the same length
+        assert len(online_weights) == len(target_weights), "Mismatched weights length!"
+
+        new_weights = []
+        for online, target in zip(online_weights, target_weights):
+            new_weights.append(tau * online + (1 - tau) * target)
+
         self.target_model.set_weights(new_weights)
+    
+    def set_epsilon(self, epsilon):
+        self.epsilon = epsilon
+
 
 
