@@ -2,6 +2,8 @@ from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryA
 import numpy as np
 from DataProccesing import preprocess_image
 from AI import MarioDQN
+import tensorflow as tf
+from DQN import DoubleDQN
 from Input import Input
 from DebugInput import DebugInput
 import random
@@ -9,6 +11,17 @@ import json
 from PyQt5.QtWidgets import *
 
 levels = ['W1-1.sav', 'W1-2.sav', 'W1-3.sav', 'W1-5.sav', 'W2-2.sav', 'W4-2.sav']
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Conv2D(32, (8, 8), strides=(4, 4), activation='relu', input_shape=(64, 48, 4)),
+    tf.keras.layers.Conv2D(64, (4, 4), strides=(2, 2), activation='relu'),
+    tf.keras.layers.Conv2D(64, (3, 3), strides=(1, 1), activation='relu'),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(512, activation='relu'),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(32, activation='relu'),
+    tf.keras.layers.Dense(7, activation=tf.keras.layers.LeakyReLU(alpha=0.001))
+])
 
 class GameLoop:
     def __init__(self, filepath='C:/Programs/Mario-DS-AI/'):
@@ -35,12 +48,11 @@ class GameLoop:
         self.AMOUNT_OF_FRAMES = self.config_data['ModelSettings']['FrameStackAmount']
         self.UPDATE_EVERY = self.config_data['ModelSettings']['UpdateEveryNFrame']
 
-        self.TOTAL_PIXELS = self.AMOUNT_OF_FRAMES * 7056
-        self.frame_stack = np.zeros(self.TOTAL_PIXELS)
+        self.frame_stack = np.zeros((64, 48, 4))
         self.n_actions = 8
 
         # Create the AI
-        self.mario_agent = MarioDQN(self.TOTAL_PIXELS, self.n_actions, self.TOTAL_PIXELS, epsilon=.2)
+        self.mario_agent = DoubleDQN((64, 48, 4), self.n_actions, model_structure=model, epsilon=.2)
 
         # Create inputs
         self.inputs = Input(self.emu)
@@ -92,9 +104,12 @@ class GameLoop:
 
         # Update the frame data
         frame = self.emu.screenshot()
-        self.processed_frame, dead = preprocess_image(frame)
-        self.frame_stack = self.frame_stack[7056:]
-        self.frame_stack = np.append(self.frame_stack, self.processed_frame)
+        self.processed_frame, dead = preprocess_image(frame) 
+        self.processed_frame = self.processed_frame.T
+
+        # Shift the frames and throw out the last ones
+        self.frame_stack[:, :, :-1] = self.frame_stack[:, :, 1:]
+        self.frame_stack[:, :, -1] = self.processed_frame
 
         # Punishes the AI when mario dies and restarts the level
         if dead: 

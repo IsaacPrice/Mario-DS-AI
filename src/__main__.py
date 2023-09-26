@@ -25,25 +25,9 @@ data = {
     }
 }
 
-# This is to organize all of the random data that could be useful to analyze and see where it's going wrong
-class Info:
-    def __init__(self, exclude=None):
-        self.rewards_per_episodes = np.array([])
-        self.rewards_per_frame = np.array([])
-    
-    def update_per_frame(self, reward):
-        self.rewards_per_frame.insert(reward)
-
-    def update_per_episode(self, reward):
-        self.rewards_per_episodes.insert(reward)
-
-    def save(self, filepath):
-        pass # TODO: Have this convert current data into a pandas dataframe and then write it to a file
-
 def run_ai():
     game = GameLoop('C:/Users/jpric/OneDrive/Desktop/poopoo/Mario-DS-AI/')
     dashboard = Dashboard()
-    info = Info()
     total_frames = 0
 
     # Keep on updating the game
@@ -64,9 +48,5 @@ def run_ai():
 
         # Update the console window
         dashboard.update(data['game_data'])
-        
-        # This will add the data for the episode to store
-        if died == 1:
-            info.rewards_per_episodes(data['game_data']['total_reward'])
 
 run_ai()

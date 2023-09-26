@@ -9,7 +9,7 @@ def preprocess_image(image):
     line = line / 255.0
     line = np.sum(line)
     image = image.crop((0, 0, 256, 192))  # Crop
-    image = image.resize((84, 84), Image.ANTIALIAS)  # Resize
+    image = image.resize((64, 48), Image.ANTIALIAS)  # Resize
     image = np.array(image)  # Convert to numpy array
     image = image / 255.0  # Normalize
     dead = line == 172.09019607843138

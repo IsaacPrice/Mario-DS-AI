@@ -17,6 +17,7 @@ class Dashboard:
         self.max_height = max_height
         self.prev_actions = None
         self.prev_q_values = None
+        self.backs = np.array([0, 0, 0, 0, 0, 0, 0, 0])
 
     def scale_values(self, values):
         try:
