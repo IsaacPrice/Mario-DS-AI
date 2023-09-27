@@ -99,7 +99,7 @@ class DoubleDQN:
             return np.argmax(q_values)
     
     # This will learn with the given actions and states, and will return the Q-values
-    def learn(self, state, action, reward, next_state, total_reward, episode):
+    def learn(self, state, action, reward, next_state):
         # Use the Online Network to find the best action for the next state
         best_action = np.argmax(self.model.predict(next_state, verbose=0))
 
