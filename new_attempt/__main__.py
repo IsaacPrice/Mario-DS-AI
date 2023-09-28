@@ -1,7 +1,7 @@
 import numpy as np
 import time
 import tensorflow as tf
-from DQN import DoubleDQN
+from doubleDQN import DoubleDQN
 from Input import Input
 from DataProccesing import preprocess_image
 from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryAccessor
@@ -28,6 +28,9 @@ action_mapping = {
 learn_n_frames = 3
 input_n_frames = 2
 episodes = 1000
+epsilon = 1
+epsilon_min = 0.01
+decay = .995
 total_reward = 0
 frames = 0
 total_rewards = []
@@ -65,34 +68,29 @@ for e in range(episodes):
 
         # Handle inputs
         if frames % input_n_frames == 0:
-            action = agent.choose_action(current_stack)
+            try:
+                action = agent.choose_action(current_stack)
+            except: 
+                pass
         action_mapping[action]()
 
         # Handle emulator cycles
         emu.cycle()
         window.draw()
 
-        # Handle the input data
+        # Get the new screen state, and push out the last one
         frame = emu.screenshot()
         frame, dead = preprocess_image(frame)
         frame = frame.reshape(64, 48, 1)
-        print(f"{frame_stack.shape}, {frame.shape}")
         frame_stack = np.concatenate((frame_stack, frame), axis=2)
-        frame_stack = np.delete(frame_stack, 0)
-        print(frame_stack.shape)
-
-        # Handle process when the AI dies
-        if dead: 
-            reward -= 3
-            playing = False
-            saver.load_file('W1-1.sav')
+        frame_stack = frame_stack[:, :, 1:]
 
         # Calculate Reward
         reward += (emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000)
         total_reward += reward
 
         if frames % learn_n_frames == 0:
-            #agent.learn(current_stack, action, reward, frame_stack)
+            agent.learn(current_stack, action, reward, frame_stack)
             reward = 0
         
         # Calculate the frame rate
@@ -103,3 +101,22 @@ for e in range(episodes):
             fps = 60 / elapsed_time
             print(f"Frame Rate: {fps} FPS, Reward: {reward}, Total Reward: {total_reward}")
             start_time = time.time()
+        
+        # Cut off the AI if it goes for too long
+        if frames > 10000:
+            dead = True
+
+        # Handle process when the AI dies
+        if dead: 
+            reward -= 3
+            playing = False
+            agent.learn(current_stack, action, reward, frame_stack)
+            saver.load_file('W1-1.sav')
+    
+    # The episode is done
+    if epsilon > epsilon_min:
+        epsilon *= decay
+        agent.set_epsilon(epsilon)
+    
+    # Adjust the online network
+    agent.soft_update()
