@@ -3,7 +3,7 @@ import time
 from Input import Input
 from DataProccesing import preprocess_image
 from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryAccessor
-from doubleDQNpytorch import DoubleDQN
+from doubleDQNpytorch import DQN
 from PRE import PrioritizedReplayBuffer
 
 # Create the game
@@ -36,8 +36,7 @@ batch_size = 32
 error = 100
 total_rewards = []
 frame_stack = np.zeros((64, 48, 4))
-agent = DoubleDQN((64, 48, 4), 7, epsilon=epsilon)
-#agent.load('models/model-200.pt')
+agent = DQN((64, 48, 4), 7, epsilon=epsilon)
 replay_buffer = PrioritizedReplayBuffer(10000)
 
 
@@ -97,6 +96,7 @@ for e in range(episodes):
     playing = True
     action = 0
     frame_stack = np.zeros((64, 48, 4))
+    start_time = time.time()
 
     while playing:
         window.process_input()

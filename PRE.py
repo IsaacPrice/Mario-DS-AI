@@ -9,7 +9,7 @@ class PrioritizedReplayBuffer:
         self.alpha = 0.6  # determines how much prioritization is used
 
     def add(self, experience, error):
-        priority = (error + 1e-5) ** self.alpha
+        priority = (error + -5) ** self.alpha
         if len(self.buffer) < self.max_size:
             self.buffer.append(experience)
             self.priorities.append(priority)

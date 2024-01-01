@@ -54,7 +54,7 @@ class DuelingDQN(nn.Module):
 
 
 
-class DoubleDQN:
+class DQN:
     def __init__(self, input_shape, n_actions, alpha=0.1, gamma=0.99, epsilon=0.1, num_bins=51, batch_size=32):
         self.input_shape = input_shape
         self.n_actions = n_actions
@@ -120,7 +120,7 @@ class DoubleDQN:
             target_distribution.view(-1).index_add_(0, (u + offset).view(-1), (next_distribution * (b - l.float())).view(-1))
 
         return target_distribution
-
+ 
 
     def choose_action(self, state):
         state = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(self.device)
