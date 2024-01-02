@@ -3,7 +3,7 @@ import time
 from Input import Input
 from DataProccesing import preprocess_image
 from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryAccessor
-from doubleDQNpytorch import DQN
+from newDQN import DQN
 from PRE import PrioritizedReplayBuffer
 
 # Create the game
@@ -27,7 +27,7 @@ action_mapping = {
 # AI & needed data
 update_n_frames = 2
 episodes = 1000
-epsilon = 1
+epsilon = 0.1
 epsilon_min = 0.01
 decay = .95
 total_reward = 0
@@ -97,6 +97,7 @@ for e in range(episodes):
     action = 0
     frame_stack = np.zeros((64, 48, 4))
     start_time = time.time()
+    agent.q_network.reset_noise()
 
     while playing:
         window.process_input()

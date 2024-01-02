@@ -1,44 +1,100 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 import numpy as np
 import random
+import math
 import os
+
+class NoisyLinear(nn.Module):
+    def __init__(self, in_features, out_features, std_init=0.4):
+        super(NoisyLinear, self).__init__()
+        
+        self.in_features = in_features
+        self.out_features = out_features
+        self.std_init = std_init
+
+        self.weight_mu = nn.Parameter(torch.FloatTensor(out_features, in_features))
+        self.weight_sigma = nn.Parameter(torch.FloatTensor(out_features, in_features))
+        self.register_buffer('weight_epsilon', torch.FloatTensor(out_features, in_features))
+
+        self.bias_mu = nn.Parameter(torch.FloatTensor(out_features))
+        self.bias_sigma = nn.Parameter(torch.FloatTensor(out_features))
+        self.register_buffer('bias_epsilon', torch.FloatTensor(out_features))
+
+        self.reset_parameters()
+        self.reset_noise()
+
+    def reset_parameters(self):
+        mu_range = 1 / math.sqrt(self.in_features)
+        self.weight_mu.data.uniform_(-mu_range, mu_range)
+        self.weight_sigma.data.fill_(self.std_init / math.sqrt(self.in_features))
+        
+        self.bias_mu.data.uniform_(-mu_range, mu_range)
+        self.bias_sigma.data.fill_(self.std_init / math.sqrt(self.out_features))
+
+    def reset_noise(self):
+        epsilon_in = self._scale_noise(self.in_features)
+        epsilon_out = self._scale_noise(self.out_features)
+
+        self.weight_epsilon.copy_(epsilon_out.ger(epsilon_in))
+        self.bias_epsilon.copy_(epsilon_out)
+
+    def _scale_noise(self, size):
+        x = torch.randn(size)
+        return x.sign().mul_(x.abs().sqrt_())
+
+    def forward(self, x):
+        if self.training: 
+            return F.linear(x, self.weight_mu + self.weight_sigma * self.weight_epsilon,
+                            self.bias_mu + self.bias_sigma * self.bias_epsilon)
+        else:
+            return F.linear(x, self.weight_mu, self.bias_mu)
+
 
 class DuelingDQN(nn.Module):
     def __init__(self, input_shape, n_actions, num_bins=51):
         super(DuelingDQN, self).__init__()
         self.input_shape = input_shape
         self.n_actions = n_actions
+        print(n_actions)
 
         # Calculate the total number of input features after flattening
-        self.num_features = 12288
-        #for dim in input_shape:
-        #    self.num_features *= dim
+        self.num_features = 1
+        for dim in input_shape:
+            self.num_features *= dim
 
-        # Common layers
         self.common = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(self.num_features, 512),
+            NoisyLinear(self.num_features, 512),
             nn.ReLU(),
-            nn.Linear(512, 128),
+            NoisyLinear(512, 128),
             nn.ReLU()
         )
 
-        # Value stream
         self.value_stream = nn.Sequential(
-            nn.Linear(128, 32),
+            NoisyLinear(128, 32),
             nn.ReLU(),
-            nn.Linear(32, 1)  # Outputs a single value
+            NoisyLinear(32, 1)
         )
 
-        # Advantage stream
-        output_size = n_actions * num_bins
         self.advantage_stream = nn.Sequential(
-            nn.Linear(128, 32),
+            NoisyLinear(128, 32),
             nn.ReLU(),
-            nn.Linear(32, output_size)  # Outputs a value for each action
+            NoisyLinear(32, n_actions)
         )
+
+    def reset_noise(self):
+        for layer in self.common:
+            if isinstance(layer, NoisyLinear):
+                layer.reset_noise()
+        for layer in self.value_stream:
+            if isinstance(layer, NoisyLinear):
+                layer.reset_noise()
+        for layer in self.advantage_stream:
+            if isinstance(layer, NoisyLinear):
+                layer.reset_noise()
 
     def forward(self, x):
         x = self.common(x)
@@ -84,13 +140,15 @@ class DQN:
         returns: the action to take
         """
         if np.random.random() < self.epsilon:
-            return random.randrange(self.n_actions)
-        else:
-            with torch.no_grad():
-                state_tensor = torch.tensor(state).to(self.device).float().unsqueeze(0)
-                distribution = self.target_network.forward(state_tensor)
-                return distribution
-    
+            action = np.random.choice(self.n_actions)
+            print("random action")
+            return action
+        with torch.no_grad():
+            state_tensor = torch.tensor(state).to(self.device).float().unsqueeze(0)
+            distribution = self.target_network.forward(state_tensor)
+            action = distribution.max(1)[1].item()
+            return action
+        
     def learn(self, state, action, reward, next_state):
         state_tensor = torch.tensor(state).to(self.device).float().unsqueeze(0)
         current_q_values = self.q_network.forward(state_tensor)
