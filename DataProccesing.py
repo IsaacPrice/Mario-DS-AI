@@ -1,16 +1,27 @@
+import torch
+from torchvision import transforms
 from PIL import Image
-import numpy as np
 
-def preprocess_image(image, width=64, height=48):
-    image = image.convert('L')  # Convert to grayscale
-    line = image.crop((0, 253, 256, 254)) # Add in the function where it will determine if the player has died or not
-    # Add up all of the values inside of the line
-    line = np.array(line)
-    line = line / 255.0
-    line = np.sum(line)
-    image = image.crop((0, 0, 256, 192))  # Crop
-    image = image.resize((width, height), Image.ANTIALIAS)  # Resize
-    image = np.array(image)  # Convert to numpy array
-    image = image / 255.0  # Normalize
-    dead = line == 172.09019607843138
-    return image, dead
+def preprocess_image_tensor(image, width=128, height=96):
+    # Convert to grayscale and crop the line for death detection
+    line = image.convert('L').crop((0, 253, 256, 254))
+
+    # Convert line to tensor and normalize
+    line_tensor = transforms.ToTensor()(line)
+    line_tensor = torch.sum(line_tensor)
+
+    # Crop and resize the main image
+    image = image.convert('L').crop((0, 0, 256, 192))
+    transform = transforms.Compose([
+        transforms.Resize((height, width)),
+        transforms.ToTensor()
+    ])
+    image_tensor = transform(image)
+
+    # Normalize the image tensor
+    image_tensor = image_tensor / 255.0
+
+    # Check if the player is dead
+    dead = line_tensor.item() == 172.09019470214844
+
+    return image_tensor, dead

@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
-import random
 import math
 import os
+#from torchrl.modules import NoisyLinear
 
 class NoisyLinear(nn.Module):
     def __init__(self, in_features, out_features, std_init=0.4):
@@ -51,39 +51,59 @@ class NoisyLinear(nn.Module):
                             self.bias_mu + self.bias_sigma * self.bias_epsilon)
         else:
             return F.linear(x, self.weight_mu, self.bias_mu)
-
+        
+class ConvBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride):
+        super(ConvBlock, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride)
+        self.relu = nn.ReLU()
+        self.bn = nn.BatchNorm2d(out_channels)
+    
+    def forward(self, x):
+        return self.bn(self.relu(self.conv(x)))
 
 class DuelingDQN(nn.Module):
     def __init__(self, input_shape, n_actions, num_bins=51):
         super(DuelingDQN, self).__init__()
         self.input_shape = input_shape
         self.n_actions = n_actions
-        print(n_actions)
+
+        # Assuming input_shape is something like (channels, height, width)
+        self.conv_layers = nn.Sequential(
+            ConvBlock(input_shape[0], 32, kernel_size=8, stride=4),
+            ConvBlock(32, 64, kernel_size=4, stride=2),
+            ConvBlock(64, 64, kernel_size=3, stride=1),
+            nn.Flatten(),
+        )
+
+        conv_out_size = self._get_conv_out(input_shape)
 
         # Calculate the total number of input features after flattening
         self.num_features = 1
         for dim in input_shape:
             self.num_features *= dim
 
+        # Common part of the Dueling Architecture
         self.common = nn.Sequential(
-            nn.Flatten(),
-            NoisyLinear(self.num_features, 512),
-            nn.ReLU(),
-            NoisyLinear(512, 128),
+            NoisyLinear(conv_out_size, 512),
             nn.ReLU()
         )
 
+        # Dueling DQN streams
         self.value_stream = nn.Sequential(
-            NoisyLinear(128, 32),
-            nn.ReLU(),
-            NoisyLinear(32, 1)
+            NoisyLinear(512, 1),
         )
 
         self.advantage_stream = nn.Sequential(
-            NoisyLinear(128, 32),
+            NoisyLinear(512, 512),
             nn.ReLU(),
-            NoisyLinear(32, n_actions)
+            NoisyLinear(512, n_actions),
         )
+
+    def _get_conv_out(self, shape):
+        o = self.conv_layers(torch.zeros(1, *shape))
+        return int(torch.prod(torch.tensor(o.size())))
+
 
     def reset_noise(self):
         for layer in self.common:
@@ -97,16 +117,11 @@ class DuelingDQN(nn.Module):
                 layer.reset_noise()
 
     def forward(self, x):
-        x = self.common(x)
-
-        value = self.value_stream(x)
-        advantage = self.advantage_stream(x)
-
-        # Combine value and advantage to get Q-values
-        # Subtract mean advantage to stabilize learning
-        q_values = value + advantage - advantage.mean(dim=1, keepdim=True)
-
-        return q_values
+            conv_out = self.conv_layers(x).view(x.size(0), -1)
+            common = self.common(conv_out)
+            value = self.value_stream(common)
+            advantage = self.advantage_stream(common)
+            return value + advantage - advantage.mean(1, keepdim=True)
 
 
 class DQN:
@@ -141,13 +156,15 @@ class DQN:
         """
         if np.random.random() < self.epsilon:
             action = np.random.choice(self.n_actions)
-            print("random action")
+            #print(f"Action: {action}, From: Random ", end="\r", flush=True)
             return action
-        with torch.no_grad():
-            state_tensor = torch.tensor(state).to(self.device).float().unsqueeze(0)
-            distribution = self.target_network.forward(state_tensor)
-            action = distribution.max(1)[1].item()
-            return action
+        else:
+            with torch.no_grad():
+                state_tensor = torch.tensor(state).to(self.device).float().unsqueeze(0)
+                distribution = self.target_network.forward(state_tensor)
+                #action = distribution.max(1)[1].item()
+                #print(f"Action: {action}, From: Network", end="\r", flush=True)
+                return distribution
         
     def learn(self, state, action, reward, next_state):
         state_tensor = torch.tensor(state).to(self.device).float().unsqueeze(0)
@@ -179,4 +196,31 @@ class DQN:
 
     def set_epsilon(self, epsilon):
         self.epsilon = epsilon
+    
+    def reset_noise(self):
+        self.q_network.reset_noise()
+        self.target_network.reset_noise()
+
+    def save(self, filename="dqn_checkpoint.pth"):
+        checkpoint = {
+            'model_state_dict': self.q_network.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'target_network_state_dict': self.target_network.state_dict(),
+            'loss': self.loss,
+            'epsilon': self.epsilon
+        }
+        torch.save(checkpoint, filename)
+        print(f"Checkpoint saved to {filename}")
+
+    def load(self, filename="dqn_checkpoint.pth"):
+        if os.path.isfile(filename):
+            checkpoint = torch.load(filename)
+            self.q_network.load_state_dict(checkpoint['model_state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.target_network.load_state_dict(checkpoint['target_network_state_dict'])
+            self.loss = checkpoint['loss']
+            self.epsilon = checkpoint['epsilon']
+            print(f"Checkpoint loaded from {filename}")
+        else:
+            print(f"No checkpoint found at {filename}")
 
