@@ -5,6 +5,9 @@ from Input import Input
 from DataProccesing import preprocess_image_numpy
 from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryAccessor
 
+import os
+import sys
+
 class MarioDSEnv(gym.Env):
     """
     Custom Environment for Mario DS that follows gym interface.
@@ -25,7 +28,20 @@ class MarioDSEnv(gym.Env):
         self.emu.open('NSMB.nds')
         self.window = self.emu.create_sdl_window()
         self.saver = DeSmuME_Savestate(self.emu)
+        # Save the original stdout and stderr
+        orig_stdout = sys.stdout
+        orig_stderr = sys.stderr
+
+        # Redirect stdout and stderr to null
+        sys.stdout = open(os.devnull, 'w')
+        sys.stderr = open(os.devnull, 'w')
+
+        # Load the savestate
         self.saver.load_file('W1-3.sav')
+
+        # Restore the original stdout and stderr
+        sys.stdout = orig_stdout
+        sys.stderr = orig_stderr
         self.inputs = Input(self.emu)
         self.action_mapping = {
             0: self.inputs.none,
@@ -39,7 +55,8 @@ class MarioDSEnv(gym.Env):
         }
 
         # Create the empty frame stack
-        self.frame_stack = np.zeros((4, 96, 128), dtype=np.float16)
+        self.frame_stack = np.zeros((4, 96, 128), dtype=np.int8)
+        self.emu.volume_set(0)
 
     def step(self, action):
         """
@@ -59,7 +76,7 @@ class MarioDSEnv(gym.Env):
         self.frame_array, dead = preprocess_image_numpy(frame)
         self.frame_stack = np.concatenate((self.frame_stack, self.frame_array.reshape(1, 96, 128)))
         self.frame_stack = self.frame_stack[1:, :, :]  # Remove the oldest frame
-        print(self.frame_stack.shape)
+
 
         # 3. Calculate the reward
         reward = (self.emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000) - 0.02
@@ -67,6 +84,7 @@ class MarioDSEnv(gym.Env):
             reward = -1
 
         info = {"errors": "No errors"}  # Additional info for debugging, if necessary
+
         return np.array(self.frame_stack), reward, dead, False, info  # Return four values instead of five
 
     def reset(self):
@@ -75,7 +93,20 @@ class MarioDSEnv(gym.Env):
         """
 
         # Reset the emulator to the start of the game/level
+        # Save the original stdout and stderr
+        orig_stdout = sys.stdout
+        orig_stderr = sys.stderr
+
+        # Redirect stdout and stderr to null
+        sys.stdout = open(os.devnull, 'w')
+        sys.stderr = open(os.devnull, 'w')
+
+        # Load the savestate
         self.saver.load_file('W1-3.sav')
+
+        # Restore the original stdout and stderr
+        sys.stdout = orig_stdout
+        sys.stderr = orig_stderr
         self.frame_stack = np.zeros((4, 96, 128), dtype=np.float16)
 
         self.state = None 

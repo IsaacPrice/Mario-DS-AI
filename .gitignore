@@ -3,3 +3,4 @@ attempt 2/models/model-75.pt
 attempt 2/models/model-25.pt
 attempt 2/models/model-50.pt
 *.pt
+lightning_logs/*

@@ -24,23 +24,135 @@ from gym.wrappers import RecordVideo, RecordEpisodeStatistics, TimeLimit
 from mario_env import MarioDSEnv
 
 
-device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 num_gpus = torch.cuda.device_count()
+
+class RunningMeanStd:
+    # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
+    def __init__(self, epsilon=1e-4, shape=()):
+        self.mean = np.zeros(shape, "float64")
+        self.var = np.ones(shape, "float64")
+        self.count = epsilon
+
+    def update(self, x):
+        batch_mean = np.mean(x, axis=0)
+        batch_var = np.var(x, axis=0)
+        batch_count = x.shape[0]
+        self.update_from_moments(batch_mean, batch_var, batch_count)
+
+    def update_from_moments(self, batch_mean, batch_var, batch_count):
+        self.mean, self.var, self.count = update_mean_var_count_from_moments(
+            self.mean, self.var, self.count, batch_mean, batch_var, batch_count
+        )
+
+
+def update_mean_var_count_from_moments(
+    mean, var, count, batch_mean, batch_var, batch_count
+):
+    delta = batch_mean - mean
+    tot_count = count + batch_count
+
+    new_mean = mean + delta * batch_count / tot_count
+    m_a = var * count
+    m_b = batch_var * batch_count
+    M2 = m_a + m_b + np.square(delta) * count * batch_count / tot_count
+    new_var = M2 / tot_count
+    new_count = tot_count
+
+    return new_mean, new_var, new_count
+
+
+class NormalizeObservation(gym.core.Wrapper):
+    def __init__(
+        self,
+        env,
+        epsilon=1e-8,
+    ):
+        super().__init__(env)
+        self.num_envs = getattr(env, "num_envs", 1)
+        self.is_vector_env = getattr(env, "is_vector_env", False)
+        if self.is_vector_env:
+            self.obs_rms = RunningMeanStd(shape=self.single_observation_space.shape)
+        else:
+            self.obs_rms = RunningMeanStd(shape=self.observation_space.shape)
+        self.epsilon = epsilon
+
+    def step(self, action):
+        obs, rews, dones, infos, _ = self.env.step(action)
+        if self.is_vector_env:
+            obs = self.normalize(obs)
+        else:
+            obs = self.normalize(np.array([obs]))[0]
+        return obs, rews, dones, infos
+
+    def reset(self, **kwargs):
+        return_info = kwargs.get("return_info", False)
+        if return_info:
+            obs, info = self.env.reset(**kwargs)
+        else:
+            obs = self.env.reset(**kwargs)
+        if self.is_vector_env:
+            obs = self.normalize(obs)
+        else:
+            obs = self.normalize(np.array([obs]))[0]
+        if not return_info:
+            return obs
+        else:
+            return obs, info
+
+    def normalize(self, obs):
+        self.obs_rms.update(obs)
+        return (obs - self.obs_rms.mean) / np.sqrt(self.obs_rms.var + self.epsilon)
+
+
+class NormalizeReward(gym.core.Wrapper):
+    def __init__(
+        self,
+        env,
+        gamma=0.99,
+        epsilon=1e-8,
+    ):
+        super().__init__(env)
+        self.num_envs = getattr(env, "num_envs", 1)
+        self.is_vector_env = getattr(env, "is_vector_env", False)
+        self.return_rms = RunningMeanStd(shape=())
+        self.returns = np.zeros(self.num_envs)
+        self.gamma = gamma
+        self.epsilon = epsilon
+
+    def step(self, action):
+        obs, rews, dones, infos = self.env.step(action)
+        if not self.is_vector_env:
+            rews = np.array([rews])
+        self.returns = self.returns * self.gamma + rews
+        rews = self.normalize(rews)
+        self.returns[dones] = 0.0
+        if not self.is_vector_env:
+            rews = rews[0]
+        return obs, rews, dones, infos
+
+    def normalize(self, rews):
+        self.return_rms.update(self.returns)
+        return rews / np.sqrt(self.return_rms.var + self.epsilon)
 
 class DQN(nn.Module):
   def __init__(self, hidden_size, obs_size, n_actions):
     super().__init__()
     self.net = nn.Sequential(
+        nn.Flatten(),
         nn.Linear(obs_size, hidden_size),
         nn.ReLU(),
         nn.Linear(hidden_size, hidden_size),
-        nn.ReLU(),
-        nn.Linear(hidden_size, n_actions)
     )
 
+    self.fc_value = nn.Linear(hidden_size, 1)
+    self.fc_adv = nn.Linear(hidden_size, n_actions)
+
   def forward(self, x):
-    print(x.shape)
-    return self.net(x.float())
+    x = self.net(x.float())
+    adv = self.fc_adv(x)
+    value = self.fc_value(x)
+    return value + adv - torch.mean(adv, dim=1, keepdim=True)
 
 def epsilon_greedy(state, env, net, epsilon=0.0):
   if np.random.random() < epsilon:
@@ -78,6 +190,8 @@ class RLDataset(IterableDataset):
 def create_environment(name):
   env = MarioDSEnv()
   env = RecordEpisodeStatistics(env)
+  #env = NormalizeObservation(env)
+  #env = NormalizeReward(env)
   return env
 
 
@@ -89,15 +203,18 @@ class DeepQLearning(LightningModule):
   def __init__(self, env_name, policy=epsilon_greedy, capacity=100_000,
                batch_size=256, lr=1e-3, hidden_size=128, gamma=0.99,
                loss_fn=F.smooth_l1_loss, optim=AdamW, eps_start=1.0,
-               eps_end=0.15, eps_last_episode=100,
+               eps_end=0.15, eps_last_episode=1000,
                samples_per_epoch=10_000, sync_rate=10):
 
     super().__init__()
     self.env = create_environment(env_name)
 
-    obs_size = self.env.observation_space.shape[0]
+    obs_shape = self.env.observation_space.shape
+    obs_size = 1
+    for num in obs_shape:
+      obs_size *= num
     n_actions = self.env.action_space.n
-
+    print(f"Observation Size: {obs_size}")
     self.q_net = DQN(hidden_size, obs_size, n_actions)
     self.target_q_net = copy.deepcopy(self.q_net)
 
@@ -121,7 +238,7 @@ class DeepQLearning(LightningModule):
       else:
         action = self.env.action_space.sample()
 
-      next_state, reward, done, _, info = self.env.step(action) 
+      next_state, reward, done, info, _ = self.env.step(action) 
       self.env.render()
       exp = (state, action, reward, done, next_state)
       self.buffer.append(exp)
@@ -167,6 +284,7 @@ class DeepQLearning(LightningModule):
 
     loss = self.hparams.loss_fn(state_action_values, expected_state_action_values)
     self.log('episode/Q-Error', loss)
+
     return loss
 
   # Training epoch end
@@ -176,6 +294,7 @@ class DeepQLearning(LightningModule):
         self.hparams.eps_start - self.current_epoch /
         self.hparams.eps_last_episode
     )
+    print(f"Epsilon: {epsilon} ----------------------------------------------")
 
     self.play_episode(policy=self.policy, epsilon=epsilon)
     self.log('episode/Return', self.env.return_queue[-1])
@@ -186,11 +305,11 @@ class DeepQLearning(LightningModule):
 
 """#### Train the policy"""
 
-algo = DeepQLearning('LunarLander-v2', hidden_size=512, sync_rate=3)
+algo = DeepQLearning('LunarLander-v2', hidden_size=512, eps_end=0.05, eps_last_episode=150, sync_rate=3)
 
 trainer = Trainer(
     gpus=num_gpus,
-    max_epochs=1_500
+    max_epochs=4_500
 )
 
 trainer.fit(algo)
