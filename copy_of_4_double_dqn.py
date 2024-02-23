@@ -22,6 +22,7 @@ from pytorch_lightning.callbacks import EarlyStopping
 from gym.wrappers import RecordVideo, RecordEpisodeStatistics, TimeLimit
 
 from mario_env import MarioDSEnv
+from memory_profiler import profile
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -136,20 +137,38 @@ class NormalizeReward(gym.core.Wrapper):
         return rews / np.sqrt(self.return_rms.var + self.epsilon)
 
 class DQN(nn.Module):
-  def __init__(self, hidden_size, obs_size, n_actions):
-    super().__init__()
-    self.net = nn.Sequential(
-        nn.Flatten(),
-        nn.Linear(obs_size, hidden_size),
+
+  def __init__(self, hidden_size, obs_shape, n_actions): 
+    
+    # Process visual information
+    self.conv = nn.Sequential(
+        nn.Conv2d(obs_shape[0], 64, kernel_size=3),
+        nn.MaxPool2d(kernel_size=4),
         nn.ReLU(),
-        nn.Linear(hidden_size, hidden_size),
+        nn.Conv2d(64, 64, kernel_size=3),
+        nn.MaxPool2d(kernel_size=4),
+        nn.ReLU(),
     )
 
-    self.fc_value = nn.Linear(hidden_size, 1)
-    self.fc_adv = nn.Linear(hidden_size, n_actions)
+    conv_out_size = self._get_conv_out(obs_shape)
+    self.head = nn.Sequential(
+        nn.Linear(conv_out_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, hidden_size),
+        nn.ReLU(),
+    )
 
+    self.fc_adv = nn.Linear(hidden_size, n_actions)
+    self.fc_value == nn.Linear(hidden_size, 1)
+
+  def _get_conv_out(self, shape):
+    conv_out = self.conv(torch.zeros(1, *shape))
+    return int(np.prod(conv_out.size()))
+
+    
   def forward(self, x):
-    x = self.net(x.float())
+    x = self.conv(x.float()).view(x.size()[0], -1) 
+    x = self.head(x)
     adv = self.fc_adv(x)
     value = self.fc_value(x)
     return value + adv - torch.mean(adv, dim=1, keepdim=True)
@@ -210,12 +229,8 @@ class DeepQLearning(LightningModule):
     self.env = create_environment(env_name)
 
     obs_shape = self.env.observation_space.shape
-    obs_size = 1
-    for num in obs_shape:
-      obs_size *= num
     n_actions = self.env.action_space.n
-    print(f"Observation Size: {obs_size}")
-    self.q_net = DQN(hidden_size, obs_size, n_actions)
+    self.q_net = DQN(hidden_size, obs_shape, n_actions)
     self.target_q_net = copy.deepcopy(self.q_net)
 
     self.policy = policy
@@ -312,5 +327,9 @@ trainer = Trainer(
     max_epochs=4_500
 )
 
-trainer.fit(algo)
+@profile
+def func():
+  trainer.fit(algo)
+
+func()
 
