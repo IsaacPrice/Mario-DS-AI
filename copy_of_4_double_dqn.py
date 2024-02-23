@@ -139,7 +139,7 @@ class NormalizeReward(gym.core.Wrapper):
 class DQN(nn.Module):
 
   def __init__(self, hidden_size, obs_shape, n_actions): 
-    
+    super(DQN, self).__init__()
     # Process visual information
     self.conv = nn.Sequential(
         nn.Conv2d(obs_shape[0], 64, kernel_size=3),
@@ -159,7 +159,7 @@ class DQN(nn.Module):
     )
 
     self.fc_adv = nn.Linear(hidden_size, n_actions)
-    self.fc_value == nn.Linear(hidden_size, 1)
+    self.fc_value = nn.Linear(hidden_size, 1)
 
   def _get_conv_out(self, shape):
     conv_out = self.conv(torch.zeros(1, *shape))
@@ -184,17 +184,44 @@ def epsilon_greedy(state, env, net, epsilon=0.0):
   return action
 
 class ReplayBuffer:
+
+  # Constructor
   def __init__(self, capacity):
     self.buffer = deque(maxlen=capacity)
+    self.priorities = deque(maxlen=capacity)
+    self.capacity = capacity
+    self.alpha = 1.0
+    self.beta = 0.5
+    self.max_priority = 0.0
 
+  # __len__
   def __len__(self):
     return len(self.buffer)
 
+  # Append
   def append(self, experience):
     self.buffer.append(experience)
+    self.priorities.append(self.max_priority)
 
+  # Update
+  def update(self, index, priority):
+    if priority > self.max_priority:
+      self.max_priority = priority
+    self.priorities[index] = priority
+
+  # Sample
   def sample(self, batch_size):
-    return random.sample(self.buffer, batch_size)
+    prios = np.array(self.priorities, dtype=np.float64) + 1e-4
+    prios = prios ** self.alpha
+    probs = prios / prios.sum()
+
+    weights = (self.__len__() * probs) ** -self.beta
+    weights = weights / weights.max()
+
+    idx = np.random.choice(range(self.__len__()), p=probs, size=batch_size)
+    sample = [(i, weights[i], *self.buffer[i]) for i in idx]
+
+    return sample
 
 class RLDataset(IterableDataset):
    def __init__(self, buffer, sample_size=200):
@@ -223,7 +250,9 @@ class DeepQLearning(LightningModule):
                batch_size=256, lr=1e-3, hidden_size=128, gamma=0.99,
                loss_fn=F.smooth_l1_loss, optim=AdamW, eps_start=1.0,
                eps_end=0.15, eps_last_episode=1000,
-               samples_per_epoch=10_000, sync_rate=10):
+               samples_per_epoch=10_000, sync_rate=10,
+               a_start = 0.5, a_end = 0.0, a_last_episode = 100,
+               b_start = 0.4, b_end = 1.0, b_last_episode = 100):
 
     super().__init__()
     self.env = create_environment(env_name)
@@ -283,7 +312,8 @@ class DeepQLearning(LightningModule):
 
   # Training step
   def training_step(self, batch, batch_idx):
-    states, actions, rewards, dones, next_states = batch
+    indices, weights, states, actions, rewards, dones, next_states = batch
+    weights = weights.unsqueeze(1)
     actions = actions.unsqueeze(1)
     rewards = rewards.unsqueeze(1)
     dones = dones.unsqueeze(1)
@@ -297,9 +327,15 @@ class DeepQLearning(LightningModule):
 
     expected_state_action_values = rewards + self.hparams.gamma * next_action_values
 
-    loss = self.hparams.loss_fn(state_action_values, expected_state_action_values)
-    self.log('episode/Q-Error', loss)
+    # Compute the priorities and update
+    td_errors = (state_action_values - expected_state_action_values).abs().detach()
+    for idx, e in zip(indices, td_errors):
+      self.buffer.update(idx, e)
 
+    loss = weights * self.hparams.loss_fn(state_action_values, expected_state_action_values, reduction='none')
+    loss = loss.mean()
+
+    self.log('episode/Q-Error', loss)
     return loss
 
   # Training epoch end
@@ -309,6 +345,18 @@ class DeepQLearning(LightningModule):
         self.hparams.eps_start - self.current_epoch /
         self.hparams.eps_last_episode
     )
+    alpha = max(
+        self.hparams.a_end,
+        self.hparams.a_start - self.current_epoch /
+        self.hparams.a_last_episode
+    )
+    beta = min(
+        self.hparams.b_end,
+        self.hparams.b_start - self.current_epoch /
+        self.hparams.b_last_episode
+    )
+    self.buffer.alpha = alpha
+    self.buffer.beta = beta
     print(f"Epsilon: {epsilon} ----------------------------------------------")
 
     self.play_episode(policy=self.policy, epsilon=epsilon)
@@ -327,9 +375,5 @@ trainer = Trainer(
     max_epochs=4_500
 )
 
-@profile
-def func():
-  trainer.fit(algo)
-
-func()
+trainer.fit(algo)
 
