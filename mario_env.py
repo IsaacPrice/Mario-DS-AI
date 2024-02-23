@@ -74,7 +74,7 @@ class MarioDSEnv(gym.Env):
         # 2. Obtain the next state from the emulator
         frame = self.emu.screenshot()
         self.frame_array, dead = preprocess_image_numpy(frame)
-        self.frame_stack = np.concatenate((self.frame_stack, self.frame_array.reshape(1, 96, 128)))
+        self.frame_stack = np.concatenate((self.frame_stack, self.frame_array.reshape(1, 96, 128))) 
         self.frame_stack = self.frame_stack[1:, :, :]  # Remove the oldest frame
 
 
