@@ -2,11 +2,33 @@ import gym
 from gym import spaces
 import numpy as np
 from Input import Input
-from DataProccesing import preprocess_image_numpy
+from DataProccesing import *
 from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryAccessor
+from pympler.tracker import SummaryTracker
+
 
 import os
 import sys
+from PIL import Image
+
+from moviepy.editor import ImageSequenceClip
+
+def create_episode_video(images, episode_number):
+    output_path = f'episodes/episode_{episode_number}.mp4'
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    # Convert PIL Images to numpy arrays
+    frames = [np.array(img) for img in images]
+
+    # Create a video clip from frames
+    clip = ImageSequenceClip(frames, fps=60)
+
+    # Write the video file to disk with minimal compression
+    clip.write_videofile(output_path, codec='libx264', audio=False, bitrate='50M')
+
+    return output_path
+
+tracker = SummaryTracker()
 
 class MarioDSEnv(gym.Env):
     """
@@ -16,32 +38,27 @@ class MarioDSEnv(gym.Env):
     """
     metadata = {'render.modes': ['human', 'rgb_array']}
 
-    def __init__(self):
+    def __init__(self, frame_skip, frame_stack):
         super(MarioDSEnv, self).__init__()
 
         # Create action and observation space
         self.action_space = spaces.Discrete(8) 
-        self.observation_space = spaces.Box(low=0, high=1, shape=(4, 96, 128), dtype=np.float16)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(4, 48, 64), dtype=np.float16)
+        self.frame_skip = frame_skip
+        self.frame_stack_num = frame_stack
 
         # Initialize the emulator and extras
         self.emu = DeSmuME()  
         self.emu.open('NSMB.nds')
         self.window = self.emu.create_sdl_window()
         self.saver = DeSmuME_Savestate(self.emu)
-        # Save the original stdout and stderr
-        orig_stdout = sys.stdout
-        orig_stderr = sys.stderr
 
-        # Redirect stdout and stderr to null
-        sys.stdout = open(os.devnull, 'w')
-        sys.stderr = open(os.devnull, 'w')
+        # Load the savestate, random from 1 or 4
+        self.saver.load_file('W1-1.sav')
+ 
 
-        # Load the savestate
-        self.saver.load_file('W1-3.sav')
+        self.frame_count = 0
 
-        # Restore the original stdout and stderr
-        sys.stdout = orig_stdout
-        sys.stderr = orig_stderr
         self.inputs = Input(self.emu)
         self.action_mapping = {
             0: self.inputs.none,
@@ -55,8 +72,10 @@ class MarioDSEnv(gym.Env):
         }
 
         # Create the empty frame stack
-        self.frame_stack = np.zeros((4, 96, 128), dtype=np.int8)
+        self.frame_stack = np.zeros(((self.frame_skip * self.frame_stack_num), 48, 64), dtype=np.float16)
+        self.episode_frames = []
         self.emu.volume_set(0)
+        self.reset()
 
     def step(self, action):
         """
@@ -70,47 +89,54 @@ class MarioDSEnv(gym.Env):
 
         # Move the emulator forward by 1 frame
         self.emu.cycle()
+        self.frame_count += 1
 
         # 2. Obtain the next state from the emulator
         frame = self.emu.screenshot()
+        self.episode_frames.append(frame)
+        dead = False
         self.frame_array, dead = preprocess_image_numpy(frame)
-        self.frame_stack = np.concatenate((self.frame_stack, self.frame_array.reshape(1, 96, 128))) 
+        self.frame_stack = np.concatenate((self.frame_stack, self.frame_array.reshape(1, 48, 64))) 
         self.frame_stack = self.frame_stack[1:, :, :]  # Remove the oldest frame
-
 
         # 3. Calculate the reward
         reward = (self.emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000) - 0.02
-        if dead:
-            reward = -1
+        if dead or self.frame_count > 5000:
+            dead = True
+            reward = -3
 
         info = {"errors": "No errors"}  # Additional info for debugging, if necessary
 
-        return np.array(self.frame_stack), reward, dead, False, info  # Return four values instead of five
+        # Modify the return statement
+        frame_skip_frames = np.zeros((self.frame_stack_num, 48, 64), dtype=np.float16)
 
-    def reset(self):
+        for i in range(self.frame_stack_num):
+            index = -1 - (self.frame_skip * i)
+            frame_skip_frames[self.frame_stack_num - 1 - i] = self.frame_stack[index]
+
+        return frame_skip_frames, reward, info, dead, False
+
+    def reset(self, save_movie=False, episode=None):
         """
         Reset the state of the environment to an initial state
         """
-
-        # Reset the emulator to the start of the game/level
-        # Save the original stdout and stderr
-        orig_stdout = sys.stdout
-        orig_stderr = sys.stderr
-
-        # Redirect stdout and stderr to null
-        sys.stdout = open(os.devnull, 'w')
-        sys.stderr = open(os.devnull, 'w')
+        # Save the video
+        if save_movie:
+            create_episode_video(self.episode_frames, episode)
+        
+        self.episode_frames = []
+        self.frame_count = 0
 
         # Load the savestate
-        self.saver.load_file('W1-3.sav')
 
-        # Restore the original stdout and stderr
-        sys.stdout = orig_stdout
-        sys.stderr = orig_stderr
-        self.frame_stack = np.zeros((4, 96, 128), dtype=np.float16)
+        # Load the savestate, random from 1 or 4
+        self.saver.load_file('W1-1.sav')
+
+        self.frame_stack = np.zeros(((self.frame_skip * self.frame_stack_num), 48, 64), dtype=np.float16)
 
         self.state = None 
-        return np.array(self.frame_stack)  # Return the initial state
+
+        return np.zeros(( self.frame_stack_num, 48, 64), dtype=np.float16), 0, {"errors" : "No errors"}, False, False # Return the initial state
 
     def render(self, mode='human'):
         """

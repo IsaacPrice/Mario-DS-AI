@@ -5,3 +5,4 @@ attempt 2/models/model-50.pt
 *.pt
 lightning_logs/*
 buffer.pkl
+episodes/*
