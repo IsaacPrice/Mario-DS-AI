@@ -1,0 +1,45 @@
+Trial 1 Parameters:
+-------------------------
+lr: 0.0060547536754836685
+hidden_size: 80
+num_layers: 2
+sync_rate: 9
+a_start: 0.7546054852624321
+b_start: 0.6014487599094669
+a_end: 0.22361955510181494
+b_end: 0.015434136218467252
+a_last_episode: 1992
+b_last_episode: 1029
+sigma: 0.7565081545269917
+Max Reward: -0.22287461161613464
+
+
+Trial 2 Parameters:
+-------------------------
+lr: 0.0021741337096116337
+hidden_size: 413
+num_layers: 2
+sync_rate: 6
+a_start: 0.6801494613705947
+b_start: 0.6231213528463587
+a_end: 0.13412713824928874
+b_end: 0.15800063786150717
+a_last_episode: 767
+b_last_episode: 1679
+sigma: 0.9439189469085211
+Max Reward: -9999
+
+
+Trial 1 Parameters:
+-------------------------
+lr: 0.005415830704708877
+hidden_size: 369
+num_layers: 2
+sync_rate: 6
+a_start: 0.6007267671775257
+b_start: 0.8984131488544513
+a_end: 0.2534446089062141
+b_end: 0.05425089562501308
+a_last_episode: 1185
+b_last_episode: 1383
+sigma: 0.9966979790809836

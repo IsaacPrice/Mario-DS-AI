@@ -1,0 +1,388 @@
+2024-05-22 21:19:53,035 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-22 21:19:53,038 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-22 21:19:53,038 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-22 21:19:53,039 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-22 21:19:53,829 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-22 21:19:53,830 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-22 21:20:45,438 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-22 21:20:47,510 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 01:59:11,297 [INFO] Trial 0, value: 0.5114701390266418, params: {'lr': 0.0008729752104629381, 'hidden_size': 128, 'sync_rate': 4, 'a_end': 0.4755646210134088, 'b_end': 0.45251306306328776, 'a_last_episode': 1862, 'b_last_episode': 1347, 'sigma': 0.8340845400136111, 'frame_skip': 6, 'save_movie_every': 8, 'n_steps': 11}
+2024-05-23 06:35:21,015 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 06:35:21,017 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 06:35:21,018 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 06:35:21,019 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 06:35:21,682 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 06:35:21,684 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 06:36:11,334 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 06:36:12,527 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 11:39:56,965 [INFO] Trial 0, value: 0.36065226793289185, params: {'lr': 0.00020488347302537698, 'hidden_size': 128, 'sync_rate': 1, 'a_end': 0.11902960035161954, 'b_end': 0.26624887790997287, 'a_last_episode': 1270, 'b_last_episode': 985, 'sigma': 0.3569224785450765, 'frame_skip': 2, 'save_movie_every': 3, 'n_steps': 1}
+2024-05-23 15:51:02,878 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 15:51:02,880 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 15:51:02,881 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 15:51:02,882 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 15:51:04,078 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 15:51:04,080 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 15:51:54,579 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 15:51:55,985 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 16:12:43,294 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 16:12:43,296 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 16:12:43,297 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 16:12:43,298 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 16:12:43,974 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 16:12:43,976 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 16:13:34,331 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 16:13:35,652 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 16:17:50,502 [INFO] Trial 0, value: 0.2061019092798233, params: {'lr': 0.0001275351380635778, 'hidden_size': 256, 'sync_rate': 10, 'a_end': 0.16592847669760075, 'b_end': 0.3444724227307989, 'a_last_episode': 1920, 'b_last_episode': 1374, 'sigma': 0.8102996536091058, 'frame_skip': 7, 'save_movie_every': 8, 'n_steps': 17}
+2024-05-23 16:20:09,769 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 16:20:09,772 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 16:20:09,772 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 16:20:09,773 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 16:20:10,423 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 16:20:10,425 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 16:21:01,018 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 16:21:02,286 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 16:28:40,758 [INFO] Trial 0, value: 0.4440286457538605, params: {'lr': 7.453866501456482e-05, 'hidden_size': 512, 'sync_rate': 6, 'a_end': 0.463850333830631, 'b_end': 0.3093748036007228, 'a_last_episode': 803, 'b_last_episode': 863, 'sigma': 0.22137157871523339, 'frame_skip': 7, 'save_movie_every': 2, 'n_steps': 13}
+2024-05-23 16:41:51,019 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 16:41:51,022 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 16:41:51,022 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 16:41:51,024 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 16:41:51,698 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 16:41:51,700 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 16:42:29,472 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 16:42:29,474 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 16:42:29,476 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 16:42:29,477 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 16:42:30,149 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 16:42:30,151 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 16:43:19,936 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 16:43:21,225 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 16:46:06,513 [INFO] Trial 0, value: 0.569347083568573, params: {'lr': 0.00029862374714467336, 'hidden_size': 256, 'sync_rate': 4, 'a_end': 0.4628375620540469, 'b_end': 0.3638986700380382, 'a_last_episode': 1473, 'b_last_episode': 574, 'sigma': 0.911743337890515, 'frame_skip': 2, 'save_movie_every': 7, 'n_steps': 8}
+2024-05-23 16:56:33,234 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 16:56:33,235 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 16:56:33,236 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 16:56:33,237 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 16:56:33,858 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 16:56:33,860 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 16:57:25,165 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 16:57:26,643 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 16:58:54,555 [INFO] Trial 0, value: 0.9271838068962097, params: {'lr': 5.992363864071831e-05, 'hidden_size': 512, 'sync_rate': 4, 'a_end': 0.3160807405620163, 'b_end': 0.23806343266207267, 'a_last_episode': 1919, 'b_last_episode': 890, 'sigma': 0.908443202755074, 'frame_skip': 5, 'save_movie_every': 5, 'n_steps': 15}
+2024-05-23 17:01:46,463 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 17:01:46,466 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 17:01:46,466 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 17:01:46,467 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 17:01:47,127 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 17:01:47,128 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 17:02:38,592 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 17:02:39,913 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 17:03:57,940 [INFO] Trial 0, value: 0.8732948303222656, params: {'lr': 2.482418252893532e-05, 'hidden_size': 256, 'sync_rate': 10, 'a_end': 0.3545335090182359, 'b_end': 0.17872733746818337, 'a_last_episode': 1554, 'b_last_episode': 732, 'sigma': 0.6067786730183428, 'frame_skip': 6, 'save_movie_every': 9, 'n_steps': 8}
+2024-05-23 17:23:08,212 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 17:23:08,214 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 17:23:08,215 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 17:23:08,217 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 17:23:08,600 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 17:23:08,601 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 17:24:00,518 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 17:24:01,955 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 17:25:19,766 [INFO] Trial 0, value: 1.388804316520691, params: {'lr': 9.545266259645097e-05, 'hidden_size': 128, 'sync_rate': 2, 'a_end': 0.2421829116833096, 'b_end': 0.4673450705702601, 'a_last_episode': 1131, 'b_last_episode': 519, 'sigma': 0.514612963943774, 'frame_skip': 6, 'save_movie_every': 7, 'n_steps': 15}
+2024-05-23 17:26:44,150 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 17:26:44,153 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 17:26:44,153 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 17:26:44,154 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 17:26:44,378 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 17:26:44,380 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 17:27:35,892 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 17:27:37,203 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 17:28:56,568 [INFO] Trial 0, value: 0.9779590368270874, params: {'lr': 0.0006385265262880367, 'hidden_size': 256, 'sync_rate': 8, 'a_end': 0.47958969608921453, 'b_end': 0.48323148267076754, 'a_last_episode': 963, 'b_last_episode': 1835, 'sigma': 0.25193002968830147, 'frame_skip': 9, 'save_movie_every': 6, 'n_steps': 16}
+2024-05-23 17:32:49,430 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 17:32:49,433 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 17:32:49,434 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 17:32:49,435 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 17:32:49,777 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 17:32:49,778 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 17:33:40,822 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 17:33:42,070 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 17:34:59,573 [INFO] Trial 0, value: 1.1999762058258057, params: {'lr': 0.0004784836566729854, 'hidden_size': 256, 'sync_rate': 9, 'a_end': 0.10061617870914828, 'b_end': 0.4276080747407871, 'a_last_episode': 890, 'b_last_episode': 671, 'sigma': 0.5359792294200332, 'frame_skip': 8, 'save_movie_every': 3, 'n_steps': 2}
+2024-05-23 18:52:38,352 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 18:52:38,354 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 18:52:38,355 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 18:52:38,356 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 18:52:38,696 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 18:52:38,698 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 18:53:30,162 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 18:53:35,391 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 19:30:16,331 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 19:30:16,334 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 19:30:16,335 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 19:30:16,336 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 19:30:16,672 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 19:30:16,674 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 19:31:07,086 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 19:31:08,396 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-05-23 19:33:21,161 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-05-23 19:33:21,163 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-05-23 19:33:21,164 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-05-23 19:33:21,165 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-05-23 19:33:21,480 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-05-23 19:33:21,481 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-05-23 19:34:12,106 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-05-23 19:34:13,334 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+
+2024-06-16 19:17:17,244 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:482: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.
+  lr = trial.suggest_loguniform('lr', 1e-5, 1e-3)
+
+2024-06-16 19:17:17,248 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:485: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.5)
+
+2024-06-16 19:17:17,248 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:486: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  b_end = trial.suggest_uniform('b_end', 0.1, 0.5)
+
+2024-06-16 19:17:17,249 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:489: FutureWarning: suggest_uniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float instead.
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+
+2024-06-16 19:17:17,754 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:186: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_mu, a=math.sqrt(5))
+
+2024-06-16 19:17:17,755 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:187: UserWarning: nn.init.kaiming_uniform is now deprecated in favor of nn.init.kaiming_uniform_.
+  kaiming_uniform(self.w_sigma, a=math.sqrt(5))
+
+2024-06-16 19:18:10,452 [WARNING] c:\Users\Isaac\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:240: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 24 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+
+2024-06-16 19:18:12,021 [WARNING] C:\Users\Isaac\Desktop\Mario-DS-AI\main.py:242: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at ..\torch\csrc\utils\tensor_new.cpp:264.)
+  state = torch.tensor([state]).to(device)
+

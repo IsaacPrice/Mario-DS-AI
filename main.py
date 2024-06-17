@@ -30,14 +30,17 @@ import pickle
 from pympler.tracker import SummaryTracker
 from frameDisplay import FrameDisplay
 
+import logging
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 num_gpus = torch.cuda.device_count()
 
 import math
-from torch.nn.init import kaiming_uniform, zeros_
+from torch.nn.init import kaiming_uniform_, zeros_
 
 import torch
 from collections import deque
+import optuna
 
 class Smoother:
     def __init__(self, n, device='cpu'):
@@ -165,37 +168,37 @@ class NormalizeReward(gym.core.Wrapper):
     if not self.is_vector_env:
       rews = rews[0]
     
-    return obs, rews, infos, dones, False
+    return obs, rews, infos, dones, {}
   
   def normalize(self, rews):
     self.return_rms.update(self.returns)
     return rews / np.sqrt(self.return_rms.var + self.epsilon)
 
 class NoisyLinear(nn.Module):
-  def __init__(self, in_features, out_features, sigma):
-    super(NoisyLinear, self).__init__()
+    def __init__(self, in_features, out_features, sigma=0.5):
+        super(NoisyLinear, self).__init__()
 
-    self.w_mu = nn.Parameter(torch.empty((out_features, in_features)))
-    self.w_sigma = nn.Parameter(torch.empty((out_features, in_features)))
-    self.b_mu = nn.Parameter(torch.empty((out_features)))
-    self.b_sigma = nn.Parameter(torch.empty((out_features)))
+        self.w_mu = nn.Parameter(torch.empty((out_features, in_features)))
+        self.w_sigma = nn.Parameter(torch.empty((out_features, in_features)))
+        self.b_mu = nn.Parameter(torch.empty((out_features)))
+        self.b_sigma = nn.Parameter(torch.empty((out_features)))
 
-    kaiming_uniform(self.w_mu, a=math.sqrt(5))
-    kaiming_uniform(self.w_sigma, a=math.sqrt(5))
-    zeros_(self.b_mu)
-    zeros_(self.b_sigma)
+        kaiming_uniform_(self.w_mu, a=math.sqrt(5))
+        kaiming_uniform_(self.w_sigma, a=math.sqrt(5))
+        zeros_(self.b_mu)
+        zeros_(self.b_sigma)
 
-  def forward(self, x, sigma=0.5):
-    if self.training:
-      w_noise = torch.normal(0, sigma, size=self.w_mu.size()).to(device)
-      b_noise = torch.normal(0, sigma, size=self.b_mu.size()).to(device)
-      return F.linear(x, self.w_mu + self.w_sigma * w_noise, self.b_mu + self.b_sigma * b_noise)
-    else:
-      return F.linear(x, self.w_mu, self.b_mu)
+    def forward(self, x, sigma=0.5):
+        if self.training:  # Check if the model is in training mode
+            w_noise = torch.normal(0, sigma, size=self.w_mu.size()).to(x.device)
+            b_noise = torch.normal(0, sigma, size=self.b_mu.size()).to(x.device)
+            return F.linear(x, self.w_mu + self.w_sigma * w_noise, self.b_mu + self.b_sigma * b_noise)
+        else:
+            return F.linear(x, self.w_mu, self.b_mu)
 
 class DQN(nn.Module):
 
-  def __init__(self, hidden_size, obs_shape, n_actions, sigma=0.5, atoms=51): 
+  def __init__(self, hidden_size, num_layers, obs_shape, n_actions, sigma=0.5, atoms=51): 
     super(DQN, self).__init__()
 
     self.atoms = atoms
@@ -211,12 +214,11 @@ class DQN(nn.Module):
     )
 
     conv_out_size = self._get_conv_out(obs_shape)
-    self.head = nn.Sequential(
-        NoisyLinear(conv_out_size, hidden_size, sigma=sigma),
-        nn.ReLU(),
-        NoisyLinear(hidden_size, hidden_size, sigma=sigma),
-        nn.ReLU(),
-    )
+    self.head = nn.Sequential()
+    for i in range(num_layers):
+      self.head.add_module(f'NoisyLinear ({i+1})', NoisyLinear(conv_out_size, hidden_size, sigma=sigma))
+      self.head.add_module(f'ReLU ({i+1})', nn.ReLU())
+      conv_out_size = hidden_size
 
     self.fc_adv = NoisyLinear(hidden_size, n_actions * self.atoms, sigma=sigma)
     self.fc_value = NoisyLinear(hidden_size, self.atoms, sigma=sigma)
@@ -227,7 +229,8 @@ class DQN(nn.Module):
     return int(np.prod(conv_out.size()))
     
   def forward(self, x):
-    x = self.conv(x.float()).view(x.size()[0], -1) 
+    x = self.conv(x.float())
+    x= x.view(x.size(0), -1)
     x = self.head(x)
     adv = self.fc_adv(x).view(-1, self.n_actions, self.atoms)
     value = self.fc_value(x).view(-1, 1, self.atoms)
@@ -301,6 +304,7 @@ def create_environment(name, frame_skip, frame_stack=4):
 
 smoother = Smoother(33)
 frame_display = FrameDisplay(scale=4, num_q_values=8)
+max_reward = -9999
 
 
 class DeepQLearning(LightningModule):
@@ -308,7 +312,7 @@ class DeepQLearning(LightningModule):
   # Initialize
   def __init__(self, env_name, policy=greedy, capacity=10_000,
                batch_size=256, lr=1e-3, hidden_size=128, gamma=0.99,
-               loss_fn=F.smooth_l1_loss, optim=AdamW,
+               loss_fn=F.smooth_l1_loss, optim=AdamW, num_layers=2,
                samples_per_epoch=1_000, sync_rate=10,
                a_start = 0.5, a_end = 0.0, a_last_episode = 100,
                b_start = 0.4, b_end = 1.0, b_last_episode = 100,
@@ -325,7 +329,7 @@ class DeepQLearning(LightningModule):
     obs_shape = self.env.observation_space.shape
     n_actions = self.env.action_space.n
 
-    self.q_net = DQN(hidden_size, obs_shape, n_actions, sigma=sigma, atoms=atoms)
+    self.q_net = DQN(hidden_size, num_layers, obs_shape, n_actions, sigma=sigma, atoms=atoms)
     self.target_q_net = copy.deepcopy(self.q_net)
 
     self.policy = policy
@@ -347,6 +351,7 @@ class DeepQLearning(LightningModule):
       state = self.env.reset(save_movie=True, episode=self.episode-1)
     else:
       state = self.env.reset()
+
     done = False
     transitions = []
 
@@ -445,6 +450,7 @@ class DeepQLearning(LightningModule):
 
   # Training epoch end
   def training_epoch_end(self, training_step_outputs):
+    global max_reward
     alpha = max(
         self.hparams.a_end,
         self.hparams.a_start - self.current_epoch /
@@ -459,33 +465,121 @@ class DeepQLearning(LightningModule):
     self.buffer.beta = beta
 
     self.play_episode(policy=self.policy)
+    if self.env.return_queue[-1] > max_reward:
+      max_reward = self.env.return_queue[-1]
     self.log('episode/Return', self.env.return_queue[-1])
 
     if self.current_epoch % self.hparams.sync_rate == 0:
       self.target_q_net.load_state_dict(self.q_net.state_dict())
 
+class CustomEarlyStopping(EarlyStopping):
+    def __init__(self, *args, **kwargs):
+      super().__init__(*args, **kwargs)
+      self.best_score = None
+      self.wait_count = 0
+    
+    def on_validation_end(self, trainer, pl_module):
+        logs = trainer.logged_metrics['episode/Return']
+        print(logs)
 
-# Train the policy
-
-algo = DeepQLearning(
-  'mario', 
-  lr=0.0005,
-  hidden_size=512,
-  sync_rate=3,
-  a_end=0.2,
-  b_end=0.4,
-  a_last_episode=1500,
-  b_last_episode=1500,
-  sigma=0.8,
-  frame_skip=10,
-  save_movie_every=5,
-  n_steps=15
+trial_num = 1
+early_stop_callback = EarlyStopping(
+   monitor='episode/Return',
+   patience=500,
+   mode='max'
 )
 
-trainer = Trainer(
+def objective(trial):
+  global trial_num, max_reward
+  # Define the hyperparameters to tune
+  lr = trial.suggest_float('lr', 1e-5, 1e-2)
+  hidden_size = trial.suggest_int('hidden_size', 32, 512)
+  num_layers = trial.suggest_int('num_layers', 1, 4)
+  sync_rate = trial.suggest_int('sync_rate', 1, 10)
+  a_start = trial.suggest_uniform('a_start', 0.6, 1.0)
+  b_start = trial.suggest_uniform('b_start', 0.6, 1.0)
+  a_end = trial.suggest_uniform('a_end', 0.1, 0.3)
+  b_end = trial.suggest_uniform('b_end', 0.01, 0.2)
+  a_last_episode = trial.suggest_int('a_last_episode', 500, 2000)
+  b_last_episode = trial.suggest_int('b_last_episode', 500, 2000)
+  sigma = trial.suggest_uniform('sigma', 0.1, 1.0)
+  n_steps = trial.suggest_int('n_steps', 1, 20)
+
+  print(f"Max Reward: {max_reward}\n\n\n")
+  print(f"Trial {trial_num} Parameters:\n-------------------------")
+  print("lr:", lr)
+  print("hidden_size:", hidden_size)
+  print("num_layers:", num_layers)
+  print("sync_rate:", sync_rate)
+  print("a_start:", a_start)
+  print("b_start:", b_start)
+  print("a_end:", a_end)
+  print("b_end:", b_end)
+  print("a_last_episode:", a_last_episode)
+  print("b_last_episode:", b_last_episode)
+  print(f"sigma: {sigma}")
+
+  # Write trial details to a file
+  with open('trial_details.txt', 'a') as file:
+    file.write(f"Max Reward: {max_reward}\n\n\n")
+    file.write(f"Trial {trial_num} Parameters:\n-------------------------\n")
+    file.write(f"lr: {lr}\n")
+    file.write(f"hidden_size: {hidden_size}\n")
+    file.write(f"num_layers: {num_layers}\n")
+    file.write(f"sync_rate: {sync_rate}\n")
+    file.write(f"a_start: {a_start}\n")
+    file.write(f"b_start: {b_start}\n")
+    file.write(f"a_end: {a_end}\n")
+    file.write(f"b_end: {b_end}\n")
+    file.write(f"a_last_episode: {a_last_episode}\n")
+    file.write(f"b_last_episode: {b_last_episode}\n")
+    file.write(f"sigma: {sigma}\n")
+
+
+  # Create the algorithm instance
+  algo = DeepQLearning(
+    'mario',
+    lr=lr,
+    hidden_size=hidden_size,
+    num_layers=num_layers,
+    sync_rate=sync_rate,
+    a_start=a_start,
+    b_start=b_start,
+    a_end=a_end,
+    b_end=b_end,
+    a_last_episode=a_last_episode,
+    b_last_episode=b_last_episode,
+    sigma=sigma,
+    frame_skip=10,
+    save_movie_every=50,
+    n_steps=n_steps
+  )
+
+  # Create the trainer instance
+  trainer = Trainer(
     gpus=num_gpus,
-    max_epochs=100_000
-)
+    max_epochs=3_000,
+    callbacks=[early_stop_callback]
+  )
 
-trainer.fit(algo)
+  max_reward = -999
 
+  # Train the algorithm
+  trainer.fit(algo)
+
+  trial_num += 1
+
+  # Return the negative return as the objective value (since Optuna minimizes the objective)
+  print(trainer.logged_metrics['episode/Return'])
+  return max_reward
+
+study = optuna.create_study(direction='maximize')
+study.optimize(objective, n_trials=50)
+
+# Get the best hyperparameters
+best_params = study.best_params
+best_return = study.best_value
+
+print("Best Hyperparameters:")
+print(best_params)
+print("Best Return:", best_return)

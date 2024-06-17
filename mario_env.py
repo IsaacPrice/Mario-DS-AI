@@ -30,6 +30,11 @@ def create_episode_video(images, episode_number):
 
 tracker = SummaryTracker()
 
+emu = DeSmuME()
+emu.open('NSMB.nds')
+window = emu.create_sdl_window()
+saver = DeSmuME_Savestate(emu)
+
 class MarioDSEnv(gym.Env):
     """
     Custom Environment for Mario DS that follows gym interface.
@@ -39,6 +44,7 @@ class MarioDSEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
 
     def __init__(self, frame_skip, frame_stack):
+        global emu, window, saver
         super(MarioDSEnv, self).__init__()
 
         # Create action and observation space
@@ -48,18 +54,15 @@ class MarioDSEnv(gym.Env):
         self.frame_stack_num = frame_stack
 
         # Initialize the emulator and extras
-        self.emu = DeSmuME()  
-        self.emu.open('NSMB.nds')
-        self.window = self.emu.create_sdl_window()
-        self.saver = DeSmuME_Savestate(self.emu)
-
+        # self.emu = DeSmuME()
+        # self.emu.open('NSMB.nds')
+        # self.window = self.emu.create_sdl_window()
+        # self.saver = DeSmuME_Savestate(self.emu)
         # Load the savestate, random from 1 or 4
-        self.saver.load_file('W1-1.sav')
- 
+        saver.load_file('W1-1.sav')
 
         self.frame_count = 0
-
-        self.inputs = Input(self.emu)
+        self.inputs = Input(emu)
         self.action_mapping = {
             0: self.inputs.none,
             1: self.inputs.walk_left,
@@ -70,17 +73,17 @@ class MarioDSEnv(gym.Env):
             6: self.inputs.jump_left,
             7: self.inputs.jump_right
         }
-
         # Create the empty frame stack
+        emu.volume_set(0)
         self.frame_stack = np.zeros(((self.frame_skip * self.frame_stack_num), 48, 64), dtype=np.float16)
         self.episode_frames = []
-        self.emu.volume_set(0)
         self.reset()
 
     def step(self, action):
         """
         Execute one time step within the environment
         """
+        global emu, window, saver
         # Update the current Framestack
         self.current_stack = self.frame_stack
 
@@ -88,11 +91,11 @@ class MarioDSEnv(gym.Env):
         self.action_mapping[action]()
 
         # Move the emulator forward by 1 frame
-        self.emu.cycle()
+        emu.cycle()
         self.frame_count += 1
 
         # 2. Obtain the next state from the emulator
-        frame = self.emu.screenshot()
+        frame = emu.screenshot()
         self.episode_frames.append(frame)
         dead = False
         self.frame_array, dead = preprocess_image_numpy(frame)
@@ -100,8 +103,8 @@ class MarioDSEnv(gym.Env):
         self.frame_stack = self.frame_stack[1:, :, :]  # Remove the oldest frame
 
         # 3. Calculate the reward
-        reward = (self.emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000) - 0.02
-        if dead or self.frame_count > 5000:
+        reward = (emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000) - 0.02
+        if dead or self.frame_count > 3000:
             dead = True
             reward = -3
 
@@ -120,6 +123,7 @@ class MarioDSEnv(gym.Env):
         """
         Reset the state of the environment to an initial state
         """
+        global emu, window, saver
         # Save the video
         if save_movie:
             create_episode_video(self.episode_frames, episode)
@@ -130,25 +134,26 @@ class MarioDSEnv(gym.Env):
         # Load the savestate
 
         # Load the savestate, random from 1 or 4
-        self.saver.load_file('W1-1.sav')
+        saver.load_file('W1-1.sav')
 
         self.frame_stack = np.zeros(((self.frame_skip * self.frame_stack_num), 48, 64), dtype=np.float16)
 
         self.state = None 
 
-        return np.zeros(( self.frame_stack_num, 48, 64), dtype=np.float16), 0, {"errors" : "No errors"}, False, False # Return the initial state
+        return np.zeros((self.frame_stack_num, 48, 64), dtype=np.float16)
 
     def render(self, mode='human'):
         """
         Render the environment to the screen
         """
+        global emu, window, saver
         if mode == 'rgb_array':
-            return self.emu.screenshot()
+            return emu.screenshot()
         elif mode == 'human':
-            self.window.draw()
+            window.draw()
 
     def close(self):
         """
         Perform any necessary cleanup
         """
-        pass # No cleanup needed
+
