@@ -43,3 +43,99 @@ b_end: 0.05425089562501308
 a_last_episode: 1185
 b_last_episode: 1383
 sigma: 0.9966979790809836
+Max Reward: -0.27519628405570984
+
+
+Trial 2 Parameters:
+-------------------------
+lr: 0.006756331889267519
+hidden_size: 112
+num_layers: 4
+sync_rate: 4
+a_start: 0.7983209400471342
+b_start: 0.6510435650505203
+a_end: 0.26782001247604637
+b_end: 0.15883086439391836
+a_last_episode: 606
+b_last_episode: 1254
+sigma: 0.8362227130290028
+Max Reward: -1.1987535953521729
+
+
+Trial 3 Parameters:
+-------------------------
+lr: 0.0054373009253962535
+hidden_size: 160
+num_layers: 3
+sync_rate: 3
+a_start: 0.9938722141813819
+b_start: 0.6873888124517772
+a_end: 0.17885439147430005
+b_end: 0.03596797575114374
+a_last_episode: 550
+b_last_episode: 546
+sigma: 0.932908913083222
+Max Reward: -0.4606098532676697
+
+
+Trial 4 Parameters:
+-------------------------
+lr: 0.0016844012859661562
+hidden_size: 88
+num_layers: 1
+sync_rate: 1
+a_start: 0.6732657331186468
+b_start: 0.6495077404268287
+a_end: 0.18895875587765215
+b_end: 0.12141266588918598
+a_last_episode: 1947
+b_last_episode: 717
+sigma: 0.6513775735522214
+Max Reward: -0.30024203658103943
+
+
+Trial 5 Parameters:
+-------------------------
+lr: 0.0034633918580646993
+hidden_size: 501
+num_layers: 4
+sync_rate: 3
+a_start: 0.8461141029081797
+b_start: 0.6560030542177767
+a_end: 0.12546293922245225
+b_end: 0.05137430286307736
+a_last_episode: 1024
+b_last_episode: 1810
+sigma: 0.37824813003979574
+Max Reward: -1.0082851648330688
+
+
+Trial 6 Parameters:
+-------------------------
+lr: 0.0018771685890684752
+hidden_size: 173
+num_layers: 4
+sync_rate: 7
+a_start: 0.8469652918162813
+b_start: 0.7317471863855722
+a_end: 0.11076798444940009
+b_end: 0.03462904710420782
+a_last_episode: 1595
+b_last_episode: 1482
+sigma: 0.19951006630182577
+Max Reward: -1.2910088300704956
+
+
+Trial 7 Parameters:
+-------------------------
+lr: 0.003417794864858785
+hidden_size: 70
+num_layers: 3
+sync_rate: 10
+a_start: 0.8085311980949843
+b_start: 0.6425260705200779
+a_end: 0.2693462561623857
+b_end: 0.17748913395169344
+a_last_episode: 1689
+b_last_episode: 787
+sigma: 0.31265445919632223

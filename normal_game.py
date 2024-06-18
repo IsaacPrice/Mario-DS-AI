@@ -6,8 +6,8 @@ emu = DeSmuME()
 emu.open('NSMB.nds')
 window = emu.create_sdl_window()
 saver = DeSmuME_Savestate(emu)
-saver.load_file('W1-3.sav')
-emu.volume_set(0)
+saver.load_file('W1-5.sav')
+emu.volume_set(100)
 
 import keyboard
 from desmume.controls import Keys, keymask
@@ -39,13 +39,22 @@ class Input:
 
 inputs = Input(emu)
 
+
 while (True):
     inputs.update()
     emu.cycle()
     window.draw()
 
-    frame = emu.screenshot()
-    frame, dead = preprocess_image_numpy(frame)
+    if keyboard.is_pressed('esc'):
+        break
 
+    #frame = emu.screenshot()
+    #frame, dead = preprocess_image_numpy(frame)
+emu.destroy() 
+window.destroy()
 
+while (True):
+    pass 
+
+#emu.close()
 

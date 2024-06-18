@@ -41,6 +41,7 @@ from torch.nn.init import kaiming_uniform_, zeros_
 import torch
 from collections import deque
 import optuna
+import optuna_distributed
 
 class Smoother:
     def __init__(self, n, device='cpu'):
@@ -115,12 +116,12 @@ class NormalizeObservation(gym.core.Wrapper):
         self.epsilon = epsilon
 
     def step(self, action):
-        obs, rews, dones, infos, _ = self.env.step(action)
+        obs, rews, dones, infos, _, reward = self.env.step(action)
         if self.is_vector_env:
             obs = self.normalize(obs)
         else:
             obs = self.normalize(np.array([obs]))[0]
-        return obs, rews, dones, infos
+        return obs, rews, dones, infos, reward
 
     def reset(self, **kwargs):
         return_info = kwargs.get("return_info", False)
@@ -159,7 +160,7 @@ class NormalizeReward(gym.core.Wrapper):
 
   def step(self, action):
     # next_state, reward, done, info, _ = self.env.step(action) 
-    obs, rews, infos, dones, _ = self.env.step(action)
+    obs, rews, infos, dones, _, reward = self.env.step(action)
     if not self.is_vector_env:
       rews = np.array([rews])
     self.returns = self.returns * self.gamma + rews
@@ -168,7 +169,7 @@ class NormalizeReward(gym.core.Wrapper):
     if not self.is_vector_env:
       rews = rews[0]
     
-    return obs, rews, infos, dones, {}
+    return obs, rews, infos, dones, {}, reward
   
   def normalize(self, rews):
     self.return_rms.update(self.returns)
@@ -302,8 +303,6 @@ def create_environment(name, frame_skip, frame_stack=4):
   env = RecordEpisodeStatistics(env)
   return env
 
-smoother = Smoother(33)
-frame_display = FrameDisplay(scale=4, num_q_values=8)
 max_reward = -9999
 
 
@@ -367,7 +366,6 @@ class DeepQLearning(LightningModule):
 
       next_state, reward, infos, done, _ = self.env.step(action) 
       self.env.render()
-      frame_display.display_frames(next_state, smoother.smooth(q_values.flatten()))
       exp = (state, action, reward, done, next_state)
       self.buffer.append(exp)
       state = next_state
@@ -485,7 +483,7 @@ class CustomEarlyStopping(EarlyStopping):
 trial_num = 1
 early_stop_callback = EarlyStopping(
    monitor='episode/Return',
-   patience=500,
+   patience=350,
    mode='max'
 )
 
@@ -574,11 +572,12 @@ def objective(trial):
   return max_reward
 
 study = optuna.create_study(direction='maximize')
-study.optimize(objective, n_trials=50)
+distributed_study = optuna_distributed.from_study(study)
+distributed_study.optimize(objective, n_trials=100)
 
 # Get the best hyperparameters
-best_params = study.best_params
-best_return = study.best_value
+best_params = distributed_study.best_params
+best_return = distributed_study.best_value
 
 print("Best Hyperparameters:")
 print(best_params)
