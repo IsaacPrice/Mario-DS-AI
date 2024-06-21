@@ -139,3 +139,131 @@ b_end: 0.17748913395169344
 a_last_episode: 1689
 b_last_episode: 787
 sigma: 0.31265445919632223
+Max Reward: -9999
+
+
+Trial 1 Parameters:
+-------------------------
+lr: 0.00805470822926657
+hidden_size: 495
+num_layers: 1
+sync_rate: 2
+a_start: 0.6412880437984753
+b_start: 0.9260038141702474
+a_end: 0.132446282181354
+b_end: 0.10877554124999125
+a_last_episode: 621
+b_last_episode: 1872
+sigma: 0.3967210190900776
+Max Reward: -9999
+
+
+Trial 1 Parameters:
+-------------------------
+lr: 0.007809621329621953
+hidden_size: 377
+num_layers: 2
+sync_rate: 6
+a_start: 0.7584854398994391
+b_start: 0.7370714593925317
+a_end: 0.10725587794017298
+b_end: 0.1856894138376594
+a_last_episode: 1298
+b_last_episode: 778
+sigma: 0.8880989183131195
+Max Reward: -9999
+
+
+Trial 1 Parameters:
+-------------------------
+lr: 0.005365365508976488
+hidden_size: 233
+num_layers: 1
+sync_rate: 5
+a_start: 0.9762036578532075
+b_start: 0.7443912675552409
+a_end: 0.14902997006604904
+b_end: 0.018446614683500673
+a_last_episode: 1926
+b_last_episode: 1200
+sigma: 0.5277136721216977
+Max Reward: -9999
+
+
+Trial 1 Parameters:
+-------------------------
+lr: 0.001158316697378192
+hidden_size: 479
+num_layers: 1
+sync_rate: 7
+a_start: 0.9013665291054777
+b_start: 0.7231103369393888
+a_end: 0.13606871962101647
+b_end: 0.07116233226621796
+a_last_episode: 1665
+b_last_episode: 1954
+sigma: 0.6674885077904684
+Max Reward: -9999
+
+
+Trial 1 Parameters:
+-------------------------
+lr: 0.007959881081803498
+hidden_size: 224
+num_layers: 2
+sync_rate: 2
+a_start: 0.8143017294524554
+b_start: 0.6665479248219891
+a_end: 0.20906936940777995
+b_end: 0.02798460648176243
+a_last_episode: 924
+b_last_episode: 559
+sigma: 0.5132546131846938
+Max Reward: -9999
+
+
+Trial 1 Parameters:
+-------------------------
+lr: 0.006570707509928243
+hidden_size: 77
+num_layers: 1
+sync_rate: 7
+a_start: 0.781908459037425
+b_start: 0.6336991216861404
+a_end: 0.268077752415272
+b_end: 0.11642230086654967
+a_last_episode: 1250
+b_last_episode: 626
+sigma: 0.1711142759528855
+Max Reward: -9999
+
+
+Trial 1 Parameters:
+-------------------------
+lr: 0.00040401115090463717
+hidden_size: 471
+num_layers: 4
+sync_rate: 10
+a_start: 0.8822656715213817
+b_start: 0.641420843855454
+a_end: 0.29810154388569254
+b_end: 0.018523403499779177
+a_last_episode: 1258
+b_last_episode: 849
+sigma: 0.6167071020732507
+Max Reward: -9999
+
+
+Trial 1 Parameters:
+-------------------------
+lr: 0.004982617212386112
+hidden_size: 374
+num_layers: 2
+sync_rate: 6
+a_start: 0.9247143738665486
+b_start: 0.6179189571216942
+a_end: 0.16509594545677678
+b_end: 0.13656838747974184
+a_last_episode: 1818
+b_last_episode: 1521
+sigma: 0.944895801271307

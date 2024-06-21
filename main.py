@@ -7,17 +7,15 @@ import numpy as np
 import torch.nn.functional as F
 
 from collections import deque, namedtuple
-from IPython.display import HTML
 from base64 import b64encode
+
+from pytorch_lightning import LightningModule, Trainer
+from pytorch_lightning.callbacks import EarlyStopping
 
 from torch import Tensor, nn
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import IterableDataset
 from torch.optim import AdamW
-
-from pytorch_lightning import LightningModule, Trainer
-
-from pytorch_lightning.callbacks import EarlyStopping
 
 from gym.wrappers import RecordVideo, RecordEpisodeStatistics, TimeLimit
 
@@ -25,14 +23,11 @@ from mario_env import MarioDSEnv
 from memory_profiler import profile
 
 import os
-import pickle
-
 from pympler.tracker import SummaryTracker
 from frameDisplay import FrameDisplay
 
-import logging
-
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(device)
 num_gpus = torch.cuda.device_count()
 
 import math
@@ -41,7 +36,6 @@ from torch.nn.init import kaiming_uniform_, zeros_
 import torch
 from collections import deque
 import optuna
-import optuna_distributed
 
 class Smoother:
     def __init__(self, n, device='cpu'):
@@ -116,12 +110,12 @@ class NormalizeObservation(gym.core.Wrapper):
         self.epsilon = epsilon
 
     def step(self, action):
-        obs, rews, dones, infos, _, reward = self.env.step(action)
+        obs, rews, dones, _, infos = self.env.step(action)
         if self.is_vector_env:
             obs = self.normalize(obs)
         else:
             obs = self.normalize(np.array([obs]))[0]
-        return obs, rews, dones, infos, reward
+        return obs, rews, dones, False, infos
 
     def reset(self, **kwargs):
         return_info = kwargs.get("return_info", False)
@@ -160,7 +154,7 @@ class NormalizeReward(gym.core.Wrapper):
 
   def step(self, action):
     # next_state, reward, done, info, _ = self.env.step(action) 
-    obs, rews, infos, dones, _, reward = self.env.step(action)
+    obs, rews, dones, _, infos = self.env.step(action)
     if not self.is_vector_env:
       rews = np.array([rews])
     self.returns = self.returns * self.gamma + rews
@@ -169,7 +163,7 @@ class NormalizeReward(gym.core.Wrapper):
     if not self.is_vector_env:
       rews = rews[0]
     
-    return obs, rews, infos, dones, {}, reward
+    return obs, rews, dones, False, infos
   
   def normalize(self, rews):
     self.return_rms.update(self.returns)
@@ -191,11 +185,34 @@ class NoisyLinear(nn.Module):
 
     def forward(self, x, sigma=0.5):
         if self.training:  # Check if the model is in training mode
-            w_noise = torch.normal(0, sigma, size=self.w_mu.size()).to(x.device)
-            b_noise = torch.normal(0, sigma, size=self.b_mu.size()).to(x.device)
+            w_noise = torch.normal(0, sigma, size=self.w_mu.size()).to(device)
+            b_noise = torch.normal(0, sigma, size=self.b_mu.size()).to(device)
             return F.linear(x, self.w_mu + self.w_sigma * w_noise, self.b_mu + self.b_sigma * b_noise)
         else:
             return F.linear(x, self.w_mu, self.b_mu)
+        
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, stride=1):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        
+        self.shortcut = nn.Sequential()
+        if stride != 1 or in_channels != out_channels:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride),
+                nn.BatchNorm2d(out_channels)
+            )
+    
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += self.shortcut(x)
+        out = F.relu(out)
+        return out
+    
 
 class DQN(nn.Module):
 
@@ -206,20 +223,18 @@ class DQN(nn.Module):
     self.n_actions = n_actions
 
     self.conv = nn.Sequential(
-        nn.Conv2d(obs_shape[0], 32, kernel_size=8, stride=4),
-        nn.ReLU(),
-        nn.Conv2d(32, 64, kernel_size=4, stride=2),
-        nn.ReLU(),
-        nn.Conv2d(64, 64, kernel_size=3, stride=1),
-        nn.ReLU(),
+        ResidualBlock(obs_shape[0], 64, stride=2),
+        ResidualBlock(64, 128, stride=2),
+        ResidualBlock(128, 256, stride=2),
     )
 
-    conv_out_size = self._get_conv_out(obs_shape)
-    self.head = nn.Sequential()
-    for i in range(num_layers):
-      self.head.add_module(f'NoisyLinear ({i+1})', NoisyLinear(conv_out_size, hidden_size, sigma=sigma))
-      self.head.add_module(f'ReLU ({i+1})', nn.ReLU())
-      conv_out_size = hidden_size
+    conv_out_size = 256 * 6 * 8
+    self.head = nn.Sequential(
+        NoisyLinear(conv_out_size, hidden_size, sigma=sigma),
+        nn.ReLU(),
+        NoisyLinear(hidden_size, hidden_size, sigma=sigma),
+        nn.ReLU()
+    )
 
     self.fc_adv = NoisyLinear(hidden_size, n_actions * self.atoms, sigma=sigma)
     self.fc_value = NoisyLinear(hidden_size, self.atoms, sigma=sigma)
@@ -230,14 +245,15 @@ class DQN(nn.Module):
     return int(np.prod(conv_out.size()))
     
   def forward(self, x):
-    x = self.conv(x.float())
+    x = x.to(device)
+    x = self.conv(x)
     x= x.view(x.size(0), -1)
     x = self.head(x)
     adv = self.fc_adv(x).view(-1, self.n_actions, self.atoms)
     value = self.fc_value(x).view(-1, 1, self.atoms)
     q_logits = value + adv - adv.mean(dim=1, keepdim=True)
     q_probs = F.softmax(q_logits, dim=-1)
-    return q_probs
+    return q_probs.to(device)
 
 def greedy(state, net, support):
   state = torch.tensor([state]).to(device)
@@ -328,8 +344,8 @@ class DeepQLearning(LightningModule):
     obs_shape = self.env.observation_space.shape
     n_actions = self.env.action_space.n
 
-    self.q_net = DQN(hidden_size, num_layers, obs_shape, n_actions, sigma=sigma, atoms=atoms)
-    self.target_q_net = copy.deepcopy(self.q_net)
+    self.q_net = DQN(hidden_size, num_layers, obs_shape, n_actions, sigma=sigma, atoms=atoms).to(device)
+    self.target_q_net = copy.deepcopy(self.q_net).to(device)
 
     self.policy = policy
     self.buffer = ReplayBuffer(capacity)
@@ -364,7 +380,7 @@ class DeepQLearning(LightningModule):
       else:
         action = self.env.action_space.sample()
 
-      next_state, reward, infos, done, _ = self.env.step(action) 
+      next_state, reward, done, _, info = self.env.step(action) 
       self.env.render()
       exp = (state, action, reward, done, next_state)
       self.buffer.append(exp)
@@ -399,8 +415,8 @@ class DeepQLearning(LightningModule):
   # Training step
   def training_step(self, batch, batch_idx):
     indices, weights, states, actions, returns, dones, next_states = batch
-    returns = returns.unsqueeze(1)
-    dones = dones.unsqueeze(1)
+    returns = returns.unsqueeze(1).to(device)
+    dones = dones.unsqueeze(1).to(device)
     batch_size = len(indices)
 
     q_value_probs = self.q_net(states) # (batch_size, n_actions, atoms)
@@ -436,12 +452,12 @@ class DeepQLearning(LightningModule):
 
     m = m.reshape(batch_size, self.hparams.atoms) # (batch_size, atoms)
 
-    cross_entropies = -(m * log_action_value_probs).sum(dim=-1) # (batch_size, atoms) -> (batch_size)
+    cross_entropies = -(m * log_action_value_probs).sum(dim=-1).to(device) # (batch_size, atoms) -> (batch_size)
 
     for idx, e in zip(indices, cross_entropies):
       self.buffer.update(idx, e.item())
 
-    loss = (cross_entropies * weights).mean()
+    loss = (cross_entropies * weights.to(device)).mean()
 
     self.log('episode/Q-Error', loss)
     return loss
@@ -481,11 +497,7 @@ class CustomEarlyStopping(EarlyStopping):
         print(logs)
 
 trial_num = 1
-early_stop_callback = EarlyStopping(
-   monitor='episode/Return',
-   patience=350,
-   mode='max'
-)
+
 
 def objective(trial):
   global trial_num, max_reward
@@ -571,14 +583,37 @@ def objective(trial):
   print(trainer.logged_metrics['episode/Return'])
   return max_reward
 
+"""
 study = optuna.create_study(direction='maximize')
 distributed_study = optuna_distributed.from_study(study)
 distributed_study.optimize(objective, n_trials=100)
 
 # Get the best hyperparameters
-best_params = distributed_study.best_params
+#best_params = distributed_study.best_params
 best_return = distributed_study.best_value
 
 print("Best Hyperparameters:")
 print(best_params)
 print("Best Return:", best_return)
+"""
+
+
+algo = DeepQLearning(
+    'mario',
+    lr=0.001,
+    hidden_size=512,
+    num_layers=2,
+    sync_rate=5,
+    a_last_episode=1000,
+    b_last_episode=1000,
+    sigma=.5,
+    frame_skip=10,
+    save_movie_every=5,
+    n_steps=15
+)
+
+trainer = Trainer(
+    max_epochs=10_000
+)
+
+trainer.fit(algo)

@@ -43,7 +43,7 @@ class MarioDSEnv(gym.Env):
 
         # Create action and observation space
         self.action_space = spaces.Discrete(8) 
-        self.observation_space = spaces.Box(low=0, high=1, shape=(4, 48, 64), dtype=np.float16)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(4, 48, 64), dtype=np.float32)
         self.frame_skip = frame_skip
         self.frame_stack_num = frame_stack
 
@@ -52,8 +52,7 @@ class MarioDSEnv(gym.Env):
         self.emu.open('NSMB.nds')
         self.window = self.emu.create_sdl_window()
         self.saver = DeSmuME_Savestate(self.emu)
-        # Load the savestate
-        self.saver.load_file('W1-1.sav')
+        self.saver.load_file('W1-1 (linux).dsv')
 
         self.frame_count = 0
         self.inputs = Input(self.emu)
@@ -69,7 +68,7 @@ class MarioDSEnv(gym.Env):
         }
         # Create the empty frame stack
         self.emu.volume_set(0)
-        self.frame_stack = np.zeros(((self.frame_skip * self.frame_stack_num), 48, 64), dtype=np.float16)
+        self.frame_stack = np.zeros(((self.frame_skip * self.frame_stack_num), 48, 64), dtype=np.float32)
         self.episode_frames = []
         self.reset()
 
@@ -104,13 +103,13 @@ class MarioDSEnv(gym.Env):
         info = {"errors": "No errors"}  # Additional info for debugging, if necessary
 
         # Modify the return statement
-        frame_skip_frames = np.zeros((self.frame_stack_num, 48, 64), dtype=np.float16)
+        frame_skip_frames = np.zeros((self.frame_stack_num, 48, 64), dtype=np.float32)
 
         for i in range(self.frame_stack_num):
             index = -1 - (self.frame_skip * i)
             frame_skip_frames[self.frame_stack_num - 1 - i] = self.frame_stack[index]
 
-        return frame_skip_frames, reward, info, dead, False, reward
+        return frame_skip_frames, reward, dead, False, info
 
     def reset(self, save_movie=False, episode=None):
         """
@@ -124,13 +123,13 @@ class MarioDSEnv(gym.Env):
         self.frame_count = 0
 
         # Load the savestate, random from 1 or 4
-        self.saver.load_file('W1-1.sav')
+        self.saver.load_file('W1-1 (linux).dsv')
 
-        self.frame_stack = np.zeros(((self.frame_skip * self.frame_stack_num), 48, 64), dtype=np.float16)
+        self.frame_stack = np.zeros(((self.frame_skip * self.frame_stack_num), 48, 64), dtype=np.float32)
 
         self.state = None 
 
-        return np.zeros((self.frame_stack_num, 48, 64), dtype=np.float16)
+        return np.zeros((self.frame_stack_num, 48, 64), dtype=np.float32)
 
     def render(self, mode='human'):
         if mode == 'rgb_array':

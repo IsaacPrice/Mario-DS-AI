@@ -167,7 +167,7 @@ for e in range(episodes):
     tested = torch.zeros(8)
 
     # Initialize frame stack as a PyTorch tensor
-    frame_stack = torch.zeros((4, 96, 128), dtype=torch.float16)  # Assuming height=48, width=64
+    frame_stack = torch.zeros((4, 96, 128), dtype=torch.float32)  # Assuming height=48, width=64
     if torch.cuda.is_available():
         frame_stack = frame_stack.cuda()
 

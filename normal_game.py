@@ -1,55 +1,41 @@
-from DataProccesing import preprocess_image_numpy
 from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryAccessor
-from DataProccesing import preprocess_image_numpy
+from desmume.controls import Keys, keymask
+import numpy as np
+from PIL import Image
+
 
 emu = DeSmuME()  
 emu.open('NSMB.nds')
 window = emu.create_sdl_window()
 saver = DeSmuME_Savestate(emu)
-saver.load_file('W1-5.sav')
+emu.reset()
+#saver.load_file('poop.dsv')
 emu.volume_set(100)
 
 import keyboard
 from desmume.controls import Keys, keymask
 
-class Input:
-    def __init__(self, emu):
-        self.emu = emu
-        self.keys = {
-            'a': Keys.KEY_A,
-            's': Keys.KEY_B,
-            'd': Keys.KEY_X,
-            'f': Keys.KEY_Y,
-            'q': Keys.KEY_L,
-            'e': Keys.KEY_R,
-            'enter': Keys.KEY_START,
-            'space': Keys.KEY_SELECT,
-            'up': Keys.KEY_UP,
-            'down': Keys.KEY_DOWN,
-            'left': Keys.KEY_LEFT,
-            'right': Keys.KEY_RIGHT
-        }
-
-    def update(self):
-        for key, ds_key in self.keys.items():
-            if keyboard.is_pressed(key):
-                self.emu.input.keypad_add_key(keymask(ds_key))
-            else:
-                self.emu.input.keypad_rm_key(keymask(ds_key))
-
-inputs = Input(emu)
-
-
+keys = [Keys.KEY_A, Keys.KEY_X, Keys.KEY_LEFT, Keys.KEY_RIGHT, Keys.KEY_DOWN, Keys.KEY_UP]
+def release_all():
+    for key in keys:
+        emu.input.keypad_rm_key(keymask(key))
+        
+frame = 0
 while (True):
-    inputs.update()
+    window.process_input()
+    image = emu.screenshot()
+    line_sum = np.sum(np.array(image.convert('L').crop((0, 237, 256, 238))))
+    if line_sum == 43342:
+        frame += 1
+    if frame == 30:
+        emu.pause() 
+        saver.save_file('W1-1 (linux).dsv')
+    else:
+        emu.input.keypad_add_key(keymask(Keys.KEY_RIGHT))
     emu.cycle()
     window.draw()
 
-    if keyboard.is_pressed('esc'):
-        break
 
-    #frame = emu.screenshot()
-    #frame, dead = preprocess_image_numpy(frame)
 emu.destroy() 
 window.destroy()
 
