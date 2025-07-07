@@ -6,3 +6,4 @@ attempt 2/models/model-50.pt
 lightning_logs/*
 buffer.pkl
 episodes/*
+__pycache__/

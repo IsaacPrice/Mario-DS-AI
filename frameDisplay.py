@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 class FrameDisplay:
-    def __init__(self, frame_shape=(48, 64), scale=4, spacing=5, window_size=(640, 480), num_q_values=8):
+    def __init__(self, frame_shape=(64, 96), scale=4, spacing=5, window_size=(640, 480), num_q_values=10):
         self.frame_shape = frame_shape
         self.scale = scale
         self.spacing = spacing
