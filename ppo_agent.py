@@ -108,7 +108,7 @@ class PPOMemory:
 class PPOAgent:
     def __init__(self, input_shape, n_actions, lr=3e-4, gamma=0.99, eps_clip=0.2, 
                  k_epochs=4, entropy_coef=0.01, value_coef=0.5, max_grad_norm=0.5,
-                 update_timestep=2048, gae_lambda=0.95):
+                 update_timestep=4096, gae_lambda=0.95):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
         

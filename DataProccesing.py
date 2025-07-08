@@ -47,7 +47,8 @@ def preprocess_image_ppo(image, width=64, height=48, contrast_factor=2.5):
     line = np.array(gray_image.crop((0, 237, 256, 238)))
     line_sum = np.sum(line)
     dead = line_sum == 44044
-    
+    print(f"Line sum: {line_sum}, Dead: {dead}")
+
     # Crop and resize the main image
     image_cropped = np.array(image_enhanced.crop((0, 0, 256, 192)))
     image_resized = resize(image_cropped, (height, width), anti_aliasing=True, mode='reflect')
@@ -75,7 +76,8 @@ def preprocess_image_ppo_enhanced(image, width=96, height=64, contrast_factor=3.
     # Check for death using line detection
     line = np.array(gray_image.crop((0, 237, 256, 238)))
     line_sum = np.sum(line)
-    dead = line_sum == 44044
+    dead = line_sum == 44044 or line_sum != 43342
+
     
     # Crop and resize the main image with higher resolution
     image_cropped = np.array(image_enhanced.crop((0, 0, 256, 192)))
