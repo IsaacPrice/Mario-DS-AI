@@ -1,179 +1,87 @@
 # Mario DS AI - Reinforcement Learning
 
-This project implements two state-of-the-art reinforcement learning algorithms to play Mario DS using a Nintendo DS emulator.
+Train AI agents to play New Super Mario Bros. DS using advanced reinforcement learning algorithms. This project implements both Rainbow DQN and PPO with real-time visualization and automatic model saving.
 
 ## Features
 
-- **Rainbow DQN**: Deep Q-Network with prioritized experience replay, dueling architecture, distributional RL, multi-step learning, and noisy networks
-- **PPO**: Proximal Policy Optimization with generalized advantage estimation
-- **Real-time visualization**: Live plots showing training progress, rewards, and losses
-- **Episode recording**: Automatic video generation of episodes
-- **Model saving/loading**: Checkpoint system for training resumption and testing
+- **Rainbow DQN**: Advanced Deep Q-Network with prioritized replay, dueling architecture, distributional RL, multi-step learning, and noisy networks
+- **PPO**: Proximal Policy Optimization with actor-critic architecture and generalized advantage estimation
+- **Real-time training visualization**: Live plots of rewards, losses, and performance metrics
+- **Automatic model checkpointing**: Best models saved automatically with periodic backups
+- **Episode recording**: MP4 videos generated for performance analysis
 
-## Algorithms Implemented
-
-### Rainbow DQN
-- Prioritized Experience Replay
-- Dueling Network Architecture
-- Distributional RL (C51)
-- Multi-step Learning
-- Noisy Networks for exploration
-- Double DQN
-
-### PPO (Proximal Policy Optimization)
-- Actor-Critic architecture
-- Generalized Advantage Estimation (GAE)
-- Clipped policy gradients
-- Entropy regularization
-
-## Installation
+## Prerequisites
 
 1. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Make sure you have the DeSmuME emulator Python bindings installed
-3. Ensure you have the NSMB.nds ROM file and save states in the project directory
+2. Place the `NSMB.nds` ROM file in the project root directory
+3. The DeSmuME emulator Python bindings will be installed automatically via requirements
+
+## Quick Start
+
+```bash
+# Train PPO (recommended)
+python train_mario.py --algorithm ppo --mode train --episodes 500
+
+# Train Rainbow DQN
+python train_mario.py --algorithm rainbow --mode train --episodes 500
+
+# Test a trained model
+python train_mario.py --algorithm ppo --mode test --model_path models/ppo_best.pth
+```
 
 ## Usage
 
-### Interactive Launcher
+### Training Parameters
+- `--algorithm ppo`: Uses Proximal Policy Optimization (generally more stable and faster)
+- `--algorithm rainbow`: Uses Rainbow DQN (more exploratory, potentially higher performance ceiling)
+- `--mode train`: Train a new model from scratch with live visualization
+- `--mode test`: Load and evaluate a pre-trained model
+- `--episodes N`: Number of episodes to run (default: 1000 for training, 5 for testing)
+- `--save_interval N`: Save model checkpoint every N episodes (default: 100)
+- `--frame_skip N`: Skip N frames between actions for faster training (default: 4)
+- `--frame_stack N`: Stack N consecutive frames for temporal information (default: 4)
+
+### Example Commands
+
 ```bash
-python launcher.py
-```
-This will guide you through algorithm selection and training options.
+# Long training session with frequent saves
+python train_mario.py --algorithm ppo --episodes 2000 --save_interval 50
 
-### Command Line Training
+# Quick test with custom frame settings
+python train_mario.py --algorithm ppo --mode test --model_path models/ppo_episode_500.pth --frame_skip 8 --frame_stack 3
 
-#### Train Rainbow DQN:
-```bash
-python train_mario.py --algorithm rainbow --mode train --episodes 1000
-```
-
-#### Train PPO:
-```bash
-python train_mario.py --algorithm ppo --mode train --episodes 1000
+# Fast training with higher frame skip
+python train_mario.py --algorithm rainbow --episodes 1000 --frame_skip 10
 ```
 
-#### Test a trained model:
-```bash
-python train_mario.py --algorithm rainbow --mode test --model_path models/rainbow_best.pth --episodes 5
-```
+## Training Process
 
-### Quick Start Options
-```bash
-# Quick Rainbow DQN training
-python launcher.py rainbow
+During training, you'll see:
+- **Real-time plots**: Episode rewards, training losses, and algorithm-specific metrics
+- **Progress updates**: Current episode, best score, recent performance averages
+- **Automatic saving**: Best models saved when new high scores are achieved
+- **Video generation**: Episode recordings saved to `episodes/` directory
 
-# Quick PPO training
-python launcher.py ppo
+Models are saved in `models/` directory:
+- `ppo_best.pth` / `rainbow_best.pth`: Best performing models
+- `ppo_episode_N.pth` / `rainbow_episode_N.pth`: Periodic checkpoints
 
-# Install requirements only
-python launcher.py install
-```
+## Hyperparameter Tuning
 
-## Command Line Arguments
+The algorithms use optimized hyperparameters by default, but you can modify them in the source code:
 
-- `--algorithm`: Choose 'rainbow' or 'ppo'
-- `--mode`: Choose 'train' or 'test'
-- `--episodes`: Number of episodes (default: 1000 for training, 5 for testing)
-- `--save_interval`: Save model every N episodes (default: 100)
-- `--model_path`: Path to model file for testing
-- `--frame_skip`: Number of frames to skip (default: 4)
-- `--frame_stack`: Number of frames to stack (default: 4)
-
-## File Structure
-
-```
-Mario-DS-AI/
-├── mario_env.py          # Custom Gym environment for Mario DS
-├── rainbow_dqn.py        # Rainbow DQN implementation
-├── ppo_agent.py          # PPO implementation
-├── train_mario.py        # Main training script
-├── launcher.py           # Interactive launcher
-├── requirements.txt      # Python dependencies
-├── DataProccesing.py     # Image preprocessing utilities
-├── Input.py              # Emulator input handling
-├── NSMB.nds             # Nintendo DS ROM file
-├── W1-1 (linux).dsv    # Save state file
-├── models/              # Saved models directory
-└── episodes/            # Episode videos directory
-```
-
-## Environment Details
-
-The Mario DS environment provides:
-- **Observation Space**: (4, 48, 64) - 4 stacked grayscale frames of 48x64 pixels
-- **Action Space**: 8 discrete actions (none, walk left/right, run left/right, jump, jump left/right)
-- **Reward Function**: Based on Mario's position progression with death penalty
-- **Episode Termination**: Death detection or maximum steps (3000)
-
-## Training Features
-
-### Real-time Visualization
-Both algorithms display live training metrics:
-- Episode rewards over time
-- Training losses
-- Recent performance averages
-- Algorithm-specific metrics (epsilon for DQN, policy/value losses for PPO)
-
-### Model Saving
-- Best models are automatically saved when achieving new high scores
-- Periodic checkpoints saved every N episodes
-- Episode videos generated for analysis
-
-### Performance Monitoring
-- Episode reward tracking
-- Training loss monitoring
-- Memory usage tracking (via pympler)
-- GPU utilization (when available)
-
-## Hyperparameters
-
-### Rainbow DQN
-- Learning rate: 0.0001
-- Gamma: 0.99
-- Epsilon decay: 0.995
-- Batch size: 32
-- Target network update: 1000 steps
-- Multi-step: 3
-- Distributional atoms: 51
-
-### PPO
-- Learning rate: 0.0003
-- Gamma: 0.99
-- Epsilon clip: 0.2
-- K epochs: 4
-- GAE lambda: 0.95
-- Update timestep: 2048
-
-## Troubleshooting
-
-1. **CUDA Issues**: The code automatically detects GPU availability. If you have CUDA issues, it will fall back to CPU.
-
-2. **Memory Issues**: If you encounter memory issues, try reducing:
-   - Batch size
-   - Buffer size (for Rainbow DQN)
-   - Update timestep (for PPO)
-
-3. **Emulator Issues**: Ensure DeSmuME Python bindings are properly installed and the ROM file is accessible.
-
-4. **Dependencies**: Run `python launcher.py install` to install all required packages.
-
-## Results
-
-Models will be saved in the `models/` directory:
-- `rainbow_best.pth` / `ppo_best.pth`: Best performing models
-- `rainbow_episode_N.pth` / `ppo_episode_N.pth`: Periodic checkpoints
-
-Episode videos will be saved in the `episodes/` directory as MP4 files.
+**PPO**: Learning rate 0.0003, GAE lambda 0.95, clip epsilon 0.2, 4 training epochs per update
+**Rainbow DQN**: Learning rate 0.0001, epsilon decay 0.995, 3-step returns, 51 distributional atoms
 
 ## Contributing
 
 Feel free to experiment with:
-- Hyperparameter tuning
-- Reward function modifications
-- Additional RL algorithms
-- Environment enhancements
-- Visualization improvements
+- Hyperparameter tuning for different performance characteristics
+- Custom reward functions for specific behaviors
+- Additional RL algorithms (A3C, SAC, etc.)
+- Environment modifications and level selection
+- Enhanced visualization and analysis tools

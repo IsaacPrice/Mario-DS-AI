@@ -1,5 +1,4 @@
-*.pt
-__pycache__/
+__pycache__
 episodes/
 models/
 metrics/

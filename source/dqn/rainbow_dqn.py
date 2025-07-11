@@ -4,14 +4,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import random
-from collections import deque, namedtuple
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from threading import Thread
-import time
-from frameDisplay import FrameDisplay
+from collections import deque
 
-# Prioritized Experience Replay Buffer
 class PrioritizedReplayBuffer:
     def __init__(self, capacity, alpha=0.6, beta=0.4, beta_increment=0.001):
         self.capacity = capacity

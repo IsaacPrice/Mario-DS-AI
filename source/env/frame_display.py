@@ -6,6 +6,7 @@ import os
 import csv
 import time
 
+
 class FrameDisplay:
     def __init__(self, frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=10):
         self.frame_shape = frame_shape
@@ -13,9 +14,8 @@ class FrameDisplay:
         self.spacing = spacing
         self.window_size = window_size
         self.num_actions = num_actions
-        self.bar_height = 80  # Increased height for better text visibility
+        self.bar_height = 80  
         
-        # Initialize data tracking for loss and reward logging
         self.reward_history = deque(maxlen=1000)
         self.loss_history = deque(maxlen=1000)
         self.episode_rewards = deque(maxlen=500)
@@ -23,60 +23,44 @@ class FrameDisplay:
         self.current_episode = 0
         self.step_count = 0
         
-        # Create output directory for metrics
         os.makedirs('metrics', exist_ok=True)
-        
-        # Initialize CSV files for continuous logging
         self.step_metrics_file = 'metrics/step_metrics.csv'
         self.episode_metrics_file = 'metrics/episode_metrics.csv'
         
-        # Initialize CSV files with headers
         self._init_csv_files()
         
-        # PPO Action names for better visualization - simplified backward movement
         self.action_names = [
             "None",           # 0: Do nothing
-            "Walk→",          # 1: Walk right
-            "Run→",           # 2: Run right  
-            "Jump→",          # 3: Quick jump right
-            "Hold3→",         # 4: Hold jump right (3 frames)
-            "Hold4→",         # 5: Hold jump right (4 frames)
-            "Hold5→",         # 6: Hold jump right (5 frames) - tall jumps
-            "RunJump3→",      # 7: Running jump (3 frames)
-            "RunJump5→",      # 8: Long running jump (5 frames) - tall jumps
-            "Walk←",          # 9: Walk left (for backing up)
+            "Walk->",          # 1: Walk right
+            "Run->",           # 2: Run right
+            "Jump->",         # 3: Quick jump right
+            "Hold3->",        # 4: Hold jump right (3 frames)
+            "Hold4->",        # 5: Hold jump right (4 frames)
+            "Hold5->",        # 6: Hold jump right (5 frames) - tall jumps
+            "RunJump3->",    # 7: Running jump (3 frames)
+            "RunJump5->",    # 8: Long running jump (5 frames) - tall jumps
+            "Walk<-",        # 9: Walk left (for backing up)
         ]
 
+
     def _init_csv_files(self):
-        """Initialize CSV files with headers"""
-        # Step metrics CSV
         if not os.path.exists(self.step_metrics_file):
             with open(self.step_metrics_file, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(['timestamp', 'step', 'episode', 'reward', 'loss'])
         
-        # Episode metrics CSV
         if not os.path.exists(self.episode_metrics_file):
             with open(self.episode_metrics_file, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(['timestamp', 'episode', 'total_reward', 'max_x_pos', 'death_reason', 'level_completed', 'duration'])
 
-    def display_frames(self, array, action_probs, current_reward=None, current_loss=None):
-        """
-        Display frames from a numpy array, action probabilities, and log training metrics to file.
 
-        Args:
-        array (np.ndarray): A numpy array of shape (4, height, width).
-        action_probs (np.ndarray): A numpy array of action probabilities from PPO.
-        current_reward (float): Current step reward (optional).
-        current_loss (float): Current training loss (optional).
-        """
+    def display_frames(self, array, action_probs, current_reward=None, current_loss=None):
         if array.shape[1:] != self.frame_shape:
             raise ValueError(f"Each frame in the array must be of shape {self.frame_shape}")
         if len(action_probs) != self.num_actions:
             raise ValueError(f"Number of action probabilities must be {self.num_actions}")
 
-        # Log step data to file
         if current_reward is not None:
             self._log_step_data(current_reward, current_loss)
 
@@ -84,14 +68,9 @@ class FrameDisplay:
         resized_frames = [self._resize_frame(frame, self.scale) for frame in frames]
         concatenated_frames = self._concatenate_frames(resized_frames, self.spacing)
 
-        # Resize the action probabilities bar to match the width of the concatenated frames
         frame_width = concatenated_frames.shape[1]
         action_probs_frame = self._create_action_probabilities_bar(action_probs, frame_width)
-
-        # Stack frames and action probabilities bar vertically (no metrics plot)
         final_frame = np.vstack([concatenated_frames, action_probs_frame])
-
-        # Centering in the window
         final_frame = self._center_in_window(final_frame, self.window_size)
 
         cv2.imshow('PPO Mario DS - Frame Stack with Action Probabilities', final_frame)
@@ -108,9 +87,6 @@ class FrameDisplay:
         return [frame for frame in array]
 
     def _resize_frame(self, frame, scale):
-        """
-        Resize frame with nearest-neighbor interpolation while maintaining aspect ratio.
-        """
         height, width = frame.shape
         return cv2.resize(frame, (int(width * scale), int(height * scale)), interpolation=cv2.INTER_NEAREST)
 
@@ -127,9 +103,6 @@ class FrameDisplay:
         return concatenated
 
     def _center_in_window(self, frame, window_size):
-        """
-        Center frame within the specified window size.
-        """
         window_height, window_width = window_size
         frame_height, frame_width = frame.shape[:2]
 
@@ -141,95 +114,74 @@ class FrameDisplay:
                                   cv2.BORDER_CONSTANT, value=[0, 0, 0])
     
     def _create_action_probabilities_bar(self, action_probs, width):
-        """
-        Create an enhanced bar graph for action probabilities with labels.
-
-        Args:
-        action_probs (np.ndarray): A numpy array of action probabilities.
-        width (int): The width to resize the action probabilities bar to.
-        """
-        # Convert to numpy if it's a tensor
         if hasattr(action_probs, 'cpu'):
             action_probs = action_probs.cpu().numpy()
         
-        # Normalize probabilities to bar height
         max_prob = np.max(action_probs)
         if max_prob > 0:
-            probs_normalized = (action_probs / max_prob) * (self.bar_height - 20)  # Leave space for text
+            probs_normalized = (action_probs / max_prob) * (self.bar_height - 20)
         else:
             probs_normalized = np.zeros_like(action_probs)
 
-        # Use the exact width provided to match the frames
         bar_width = int(width / self.num_actions)
-        probs_frame = np.zeros((self.bar_height, width), dtype=np.uint8)  # Use exact width
+        probs_frame = np.zeros((self.bar_height, width), dtype=np.uint8)
 
-        # Find the action with highest probability
         max_action = np.argmax(action_probs)
 
         for i, (prob, norm_value) in enumerate(zip(action_probs, probs_normalized)):
             left = i * bar_width
-            right = min(left + bar_width - 2, width - 1)  # Ensure we don't exceed width
-            top = self.bar_height - int(norm_value) - 15  # Leave space for text at bottom
+            right = min(left + bar_width - 2, width - 1)  
+            top = self.bar_height - int(norm_value) - 15  
             
-            # Color the bars - highlight the most likely action
             bar_color = 200 if i == max_action else 120
-            
-            # Draw the bar
             cv2.rectangle(probs_frame, (left + 2, top), (right, self.bar_height - 15), bar_color, -1)
             
-            # Add probability percentage on top of bar
             prob_text = f"{prob*100:.0f}%"
             text_size = cv2.getTextSize(prob_text, cv2.FONT_HERSHEY_SIMPLEX, 0.3, 1)[0]
             text_x = max(left + (bar_width - text_size[0]) // 2, 0)
             text_y = max(top - 2, 10)
-            if text_x + text_size[0] < width:  # Ensure text fits
+            if text_x + text_size[0] < width:  
                 cv2.putText(probs_frame, prob_text, (text_x, text_y), 
                            cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
             
-            # Add action name at bottom
             action_name = self.action_names[i] if i < len(self.action_names) else f"A{i}"
             name_size = cv2.getTextSize(action_name, cv2.FONT_HERSHEY_SIMPLEX, 0.3, 1)[0]
             name_x = max(left + (bar_width - name_size[0]) // 2, 0)
             name_y = self.bar_height - 3
             
-            # Use different color for text of the selected action
             text_color = (255, 255, 255) if i == max_action else (180, 180, 180)
-            if name_x + name_size[0] < width:  # Ensure text fits
+            if name_x + name_size[0] < width:  
                 cv2.putText(probs_frame, action_name, (name_x, name_y), 
                            cv2.FONT_HERSHEY_SIMPLEX, 0.3, text_color, 1, cv2.LINE_AA)
 
         return probs_frame
 
+
     def update_episode_data(self, episode_info):
-        """Update episode data and log to file"""
         episode_number = episode_info.get('episode', self.current_episode)
         episode_reward = episode_info.get('total_reward', 0)
         
         self.episode_rewards.append(episode_reward)
         self.episode_numbers.append(episode_number)
         self.current_episode = episode_number
-        
-        # Log episode data to CSV
+
         self._log_episode_data(episode_info)
-        
-        # Also create a JSON snapshot for easy parsing
         self._save_episode_snapshot(episode_info)
     
+
     def _log_step_data(self, step_reward, loss=None):
-        """Log step-by-step data to CSV file"""
         self.step_count += 1
         self.reward_history.append(step_reward)
         if loss is not None:
             self.loss_history.append(loss)
         
-        # Write to CSV
         timestamp = time.time()
         with open(self.step_metrics_file, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([timestamp, self.step_count, self.current_episode, step_reward, loss])
     
+
     def _log_episode_data(self, episode_info):
-        """Log episode data to CSV file"""
         timestamp = time.time()
         with open(self.episode_metrics_file, 'a', newline='') as f:
             writer = csv.writer(f)
@@ -243,29 +195,27 @@ class FrameDisplay:
                 episode_info.get('episode_duration', 0)
             ])
     
+
     def _save_episode_snapshot(self, episode_info):
-        """Save a detailed episode snapshot as JSON"""
         snapshot = {
             'timestamp': time.time(),
             'episode': episode_info.get('episode', self.current_episode),
             'episode_info': episode_info,
-            'recent_rewards': list(self.reward_history)[-50:],  # Last 50 rewards
-            'recent_losses': list(self.loss_history)[-50:],     # Last 50 losses
+            'recent_rewards': list(self.reward_history)[-50:],  
+            'recent_losses': list(self.loss_history)[-50:],     
             'episode_rewards': list(self.episode_rewards),
             'episode_numbers': list(self.episode_numbers)
         }
         
-        # Save to JSON file
         snapshot_file = f'metrics/episode_{episode_info.get("episode", self.current_episode)}_snapshot.json'
         with open(snapshot_file, 'w') as f:
             json.dump(snapshot, f, indent=2)
         
-        # Also maintain a latest snapshot
         with open('metrics/latest_snapshot.json', 'w') as f:
             json.dump(snapshot, f, indent=2)
-    
+
+
     def get_metrics_summary(self):
-        """Get a summary of current metrics"""
         return {
             'current_episode': self.current_episode,
             'total_steps': self.step_count,
@@ -275,9 +225,8 @@ class FrameDisplay:
             'avg_episode_reward': np.mean(list(self.episode_rewards)) if len(self.episode_rewards) > 0 else 0
         }
     
+
     def close(self):
-        """Close the display and save final metrics summary"""
-        # Save final summary
         summary = self.get_metrics_summary()
         with open('metrics/final_summary.json', 'w') as f:
             json.dump(summary, f, indent=2)

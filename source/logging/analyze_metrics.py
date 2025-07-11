@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Metrics Parser for Mario DS AI Training
-This script can be used to parse and analyze the metrics files generated during training.
-"""
-
 import csv
 import json
 import os
@@ -21,7 +15,6 @@ def load_step_metrics(metrics_dir='metrics'):
         return None
 
 def load_episode_metrics(metrics_dir='metrics'):
-    """Load episode metrics from CSV"""
     episode_file = os.path.join(metrics_dir, 'episode_metrics.csv')
     if os.path.exists(episode_file):
         return pd.read_csv(episode_file)
@@ -30,7 +23,6 @@ def load_episode_metrics(metrics_dir='metrics'):
         return None
 
 def load_latest_snapshot(metrics_dir='metrics'):
-    """Load the latest training snapshot"""
     snapshot_file = os.path.join(metrics_dir, 'latest_snapshot.json')
     if os.path.exists(snapshot_file):
         with open(snapshot_file, 'r') as f:
@@ -40,17 +32,14 @@ def load_latest_snapshot(metrics_dir='metrics'):
         return None
 
 def analyze_training_progress(metrics_dir='metrics'):
-    """Analyze training progress and print summary"""
     print("=== Mario DS AI Training Analysis ===\n")
     
-    # Load data
     step_df = load_step_metrics(metrics_dir)
     episode_df = load_episode_metrics(metrics_dir)
     snapshot = load_latest_snapshot(metrics_dir)
     
-    # Analyze step metrics
     if step_df is not None and len(step_df) > 0:
-        print("📊 Step Metrics Summary:")
+        print("Step Metrics Summary:")
         print(f"  Total steps recorded: {len(step_df)}")
         print(f"  Average reward per step: {step_df['reward'].mean():.4f}")
         print(f"  Recent average reward (last 100): {step_df['reward'].tail(100).mean():.4f}")
@@ -61,9 +50,8 @@ def analyze_training_progress(metrics_dir='metrics'):
             print(f"  Recent average loss (last 100): {loss_data.tail(100).mean():.4f}")
         print()
     
-    # Analyze episode metrics
     if episode_df is not None and len(episode_df) > 0:
-        print("🎮 Episode Metrics Summary:")
+        print("Episode Metrics Summary:")
         print(f"  Total episodes: {len(episode_df)}")
         print(f"  Average episode reward: {episode_df['total_reward'].mean():.2f}")
         print(f"  Best episode reward: {episode_df['total_reward'].max():.2f}")
@@ -73,7 +61,6 @@ def analyze_training_progress(metrics_dir='metrics'):
         print(f"  Levels completed: {episode_df['level_completed'].sum()}")
         print(f"  Level completion rate: {(episode_df['level_completed'].sum() / len(episode_df) * 100):.1f}%")
         
-        # Death reason analysis
         death_reasons = episode_df['death_reason'].value_counts()
         print(f"\n  Death reasons:")
         for reason, count in death_reasons.items():
@@ -81,9 +68,8 @@ def analyze_training_progress(metrics_dir='metrics'):
             print(f"    {reason}: {count} ({percentage:.1f}%)")
         print()
     
-    # Snapshot analysis
     if snapshot is not None:
-        print("📈 Latest Training State:")
+        print("Latest Training State:")
         episode_info = snapshot.get('episode_info', {})
         print(f"  Current episode: {snapshot.get('episode', 'N/A')}")
         print(f"  Last episode reward: {episode_info.get('total_reward', 'N/A')}")
@@ -101,15 +87,12 @@ def analyze_training_progress(metrics_dir='metrics'):
         print()
 
 def export_metrics_summary(metrics_dir='metrics', output_file='training_summary.json'):
-    """Export a comprehensive training summary"""
     summary = {}
     
-    # Load all data
     step_df = load_step_metrics(metrics_dir)
     episode_df = load_episode_metrics(metrics_dir)
     snapshot = load_latest_snapshot(metrics_dir)
     
-    # Step metrics summary
     if step_df is not None and len(step_df) > 0:
         summary['step_metrics'] = {
             'total_steps': len(step_df),
@@ -123,7 +106,6 @@ def export_metrics_summary(metrics_dir='metrics', output_file='training_summary.
             summary['step_metrics']['avg_loss'] = float(loss_data.mean())
             summary['step_metrics']['recent_avg_loss'] = float(loss_data.tail(100).mean())
     
-    # Episode metrics summary
     if episode_df is not None and len(episode_df) > 0:
         summary['episode_metrics'] = {
             'total_episodes': len(episode_df),
@@ -137,17 +119,15 @@ def export_metrics_summary(metrics_dir='metrics', output_file='training_summary.
             'death_reasons': episode_df['death_reason'].value_counts().to_dict()
         }
     
-    # Latest state
     if snapshot is not None:
         summary['latest_state'] = snapshot
     
     summary['generated_at'] = pd.Timestamp.now().isoformat()
     
-    # Save summary
     with open(output_file, 'w') as f:
         json.dump(summary, f, indent=2)
     
-    print(f"📄 Training summary exported to: {output_file}")
+    print(f"Training summary exported to: {output_file}")
     return summary
 
 if __name__ == "__main__":
@@ -159,10 +139,7 @@ if __name__ == "__main__":
     parser.add_argument('--output', default='training_summary.json', help='Output file for summary')
     
     args = parser.parse_args()
-    
-    # Analyze training progress
     analyze_training_progress(args.metrics_dir)
     
-    # Export summary if requested
     if args.export:
         export_metrics_summary(args.metrics_dir, args.output)
