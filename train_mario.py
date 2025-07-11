@@ -2,13 +2,66 @@ import argparse
 import numpy as np
 import time
 import os
+import glob
+import re
 from mario_env import MarioDSEnv
 from rainbow_dqn import RainbowDQNAgent
 from ppo_agent import PPOAgent
 import matplotlib.pyplot as plt
 import torch
 
-def train_rainbow_dqn(env, episodes=1000, save_interval=100):
+def find_latest_model(algorithm):
+    """Find the latest episode model for the specified algorithm"""
+    # Look for episode models
+    episode_models = glob.glob(f"models/{algorithm}_episode_*.pth")
+    if not episode_models:
+        return None
+    
+    # Extract episode numbers and find the highest
+    episode_numbers = []
+    for model in episode_models:
+        match = re.search(rf'{algorithm}_episode_(\d+)\.pth', model)
+        if match:
+            episode_numbers.append((int(match.group(1)), model))
+    
+    if not episode_numbers:
+        return None
+    
+    # Return the model with the highest episode number
+    return max(episode_numbers, key=lambda x: x[0])[1]
+
+def load_model_if_specified(agent, algorithm, load_model=None, load_best=False, load_latest=False):
+    """Load a model based on specified options"""
+    model_path = None
+    
+    if load_model:
+        model_path = load_model
+        if not os.path.exists(model_path):
+            print(f"❌ Specified model not found: {model_path}")
+            return False
+    elif load_best:
+        model_path = f"models/{algorithm}_best.pth"
+        if not os.path.exists(model_path):
+            print(f"❌ Best model not found: {model_path}")
+            return False
+    elif load_latest:
+        model_path = find_latest_model(algorithm)
+        if not model_path:
+            print(f"❌ No episode models found for {algorithm}")
+            return False
+    
+    if model_path:
+        try:
+            agent.load_model(model_path)
+            print(f"✅ Successfully loaded model: {model_path}")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to load model {model_path}: {e}")
+            return False
+    
+    return False
+
+def train_rainbow_dqn(env, episodes=1000, save_interval=100, load_model=None, load_best=False, load_latest=False):
     """Train Rainbow DQN agent"""
     print("Training with Rainbow DQN...")
     
@@ -34,6 +87,13 @@ def train_rainbow_dqn(env, episodes=1000, save_interval=100):
         v_max=10,
         multi_step=3
     )
+    
+    # Load model if specified
+    model_loaded = load_model_if_specified(agent, 'rainbow_dqn', load_model, load_best, load_latest)
+    if model_loaded:
+        print("📚 Continuing training from loaded model")
+    else:
+        print("🆕 Starting training from scratch")
     
     # Create directories for saving
     os.makedirs('models', exist_ok=True)
@@ -76,6 +136,12 @@ def train_rainbow_dqn(env, episodes=1000, save_interval=100):
         
         print(f"Episode {episode + 1} finished - Reward: {episode_reward:.2f}, Steps: {episode_steps}")
         
+        # Get comprehensive episode info from environment
+        episode_info = env.get_episode_info()
+        
+        # Update agent with comprehensive episode data
+        agent.end_episode(episode_info)
+        
         # Update visualization
         agent.update_visualization(episode_reward, episode)
         
@@ -95,7 +161,7 @@ def train_rainbow_dqn(env, episodes=1000, save_interval=100):
     print(f"Training completed! Best reward: {best_reward:.2f}")
     return agent
 
-def train_ppo(env, episodes=1000, save_interval=100):
+def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=False, load_latest=False):
     """Train PPO agent"""
     print("Training with PPO...")
     
@@ -116,6 +182,13 @@ def train_ppo(env, episodes=1000, save_interval=100):
         update_timestep=2048,
         gae_lambda=0.95
     )
+    
+    # Load model if specified
+    model_loaded = load_model_if_specified(agent, 'ppo', load_model, load_best, load_latest)
+    if model_loaded:
+        print("📚 Continuing training from loaded model")
+    else:
+        print("🆕 Starting training from scratch")
     
     # Create directories for saving
     os.makedirs('models', exist_ok=True)
@@ -156,6 +229,12 @@ def train_ppo(env, episodes=1000, save_interval=100):
                 print(f"  Steps: {episode_steps}, Reward: {episode_reward:.2f}")
         
         print(f"Episode {episode + 1} finished - Reward: {episode_reward:.2f}, Steps: {episode_steps}")
+        
+        # Get comprehensive episode info from environment
+        episode_info = env.get_episode_info()
+        
+        # Update agent with comprehensive episode data
+        agent.end_episode(episode_info)
         
         # Update visualization
         agent.update_visualization(episode_reward, episode)
@@ -246,6 +325,14 @@ def main():
     parser.add_argument('--frame_stack', type=int, default=4,
                        help='Number of frames to stack')
     
+    # Model loading options
+    parser.add_argument('--load-model', type=str, default=None,
+                       help='Path to specific model to load')
+    parser.add_argument('--load-best', action='store_true',
+                       help='Load the best model for the selected algorithm')
+    parser.add_argument('--load-latest', action='store_true',
+                       help='Load the latest episode model for the selected algorithm')
+    
     args = parser.parse_args()
     
     # Initialize environment
@@ -258,9 +345,11 @@ def main():
     try:
         if args.mode == 'train':
             if args.algorithm == 'rainbow':
-                agent = train_rainbow_dqn(env, args.episodes, args.save_interval)
+                agent = train_rainbow_dqn(env, args.episodes, args.save_interval, 
+                                        args.load_model, args.load_best, args.load_latest)
             elif args.algorithm == 'ppo':
-                agent = train_ppo(env, args.episodes, args.save_interval)
+                agent = train_ppo(env, args.episodes, args.save_interval,
+                                args.load_model, args.load_best, args.load_latest)
         
         elif args.mode == 'test':
             if args.model_path is None:

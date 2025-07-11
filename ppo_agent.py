@@ -5,9 +5,10 @@ import torch.optim as optim
 from torch.distributions import Categorical
 import numpy as np
 import matplotlib.pyplot as plt
-from collections import deque
+from collections import deque, defaultdict
 import time
 from frameDisplay import FrameDisplay
+from enhanced_training_logger import EnhancedTrainingLogger
 
 class PPONetwork(nn.Module):
     def __init__(self, input_shape, n_actions, hidden_size=512):
@@ -109,6 +110,7 @@ class PPOAgent:
     def __init__(self, input_shape, n_actions, lr=3e-4, gamma=0.99, eps_clip=0.2, 
                  k_epochs=4, entropy_coef=0.01, value_coef=0.5, max_grad_norm=0.5,
                  update_timestep=4096, gae_lambda=0.95):
+        print(torch.cuda.is_available())
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
         
@@ -131,14 +133,24 @@ class PPOAgent:
         # Memory
         self.memory = PPOMemory()
         
-        # Training tracking
+        # Training tracking with enhanced logging
+        self.logger = None  # Will be set externally
         self.episode_rewards = []
         self.episode_lengths = []
         self.losses = []
         self.steps_done = 0
+        self.update_count = 0
+        
+        # Current step tracking for display
+        self.current_step_reward = 0
+        self.current_loss = 0
+        
+        # Action tracking for analysis
+        self.action_counts = defaultdict(int)
+        self.episode_action_counts = defaultdict(int)
         
         # Frame display for visualization
-        self.frame_display = FrameDisplay(frame_shape=(64, 96), scale=4, spacing=5, window_size=(640, 480), num_q_values=10)
+        self.frame_display = FrameDisplay(frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=10)
         
         # Disable matplotlib visualization - keep only emulator display
         # plt.ion()
@@ -150,9 +162,18 @@ class PPOAgent:
             frames = torch.FloatTensor(state).unsqueeze(0).to(self.device)
             action, log_prob, value = self.policy.act(frames)
             
-            # Display frames and action probabilities
+            # Track action usage
+            self.action_counts[action] += 1
+            self.episode_action_counts[action] += 1
+            
+            # Display frames and action probabilities with current metrics
             action_probs, _ = self.policy.forward(frames)
-            self.frame_display.display_frames(state, action_probs.squeeze(0))
+            self.frame_display.display_frames(
+                state, 
+                action_probs.squeeze(0), 
+                current_reward=self.current_step_reward, 
+                current_loss=self.current_loss if self.current_loss > 0 else None
+            )
             
         return action, log_prob.item(), value.item()
     
@@ -185,8 +206,10 @@ class PPOAgent:
     
     def update(self):
         if len(self.memory.states) < self.update_timestep:
-            return
+            return None
             
+        update_start_time = time.time()
+        
         # Get data from memory
         frames, actions, rewards, dones, old_log_probs, old_values = self.memory.get_tensors(self.device)
         
@@ -204,8 +227,12 @@ class PPOAgent:
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
         
         # PPO update
+        total_policy_loss = 0
+        total_value_loss = 0
+        total_entropy_loss = 0
         total_loss = 0
-        for _ in range(self.k_epochs):
+        
+        for epoch in range(self.k_epochs):
             # Forward pass
             action_probs, values = self.policy(frames)
             dist = Categorical(action_probs)
@@ -222,28 +249,95 @@ class PPOAgent:
             value_loss = F.mse_loss(values.squeeze(), returns)
             
             # Total loss
-            loss = policy_loss + self.value_coef * value_loss - self.entropy_coef * entropy
+            entropy_loss = -entropy
+            loss = policy_loss + self.value_coef * value_loss + self.entropy_coef * entropy_loss
+            
+            total_policy_loss += policy_loss.item()
+            total_value_loss += value_loss.item()
+            total_entropy_loss += entropy_loss.item()
             total_loss += loss.item()
             
             # Backward pass
             self.optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
+            grad_norm = torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
             self.optimizer.step()
         
+        # Calculate average losses
+        avg_policy_loss = total_policy_loss / self.k_epochs
+        avg_value_loss = total_value_loss / self.k_epochs
+        avg_entropy_loss = total_entropy_loss / self.k_epochs
+        avg_total_loss = total_loss / self.k_epochs
+        
+        update_time = time.time() - update_start_time
+        self.update_count += 1
+        
         # Store loss for plotting
-        self.losses.append(total_loss / self.k_epochs)
+        self.losses.append(avg_total_loss)
+        # Track current loss for display
+        self.current_loss = avg_total_loss
+        
+        # Log to enhanced logger if available
+        if self.logger:
+            self.logger.log_training_update(
+                update_step=self.update_count,
+                policy_loss=avg_policy_loss,
+                value_loss=avg_value_loss,
+                entropy_loss=avg_entropy_loss,
+                total_loss=avg_total_loss,
+                learning_rate=self.lr,
+                grad_norm=grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm,
+                update_time=update_time
+            )
         
         # Clear memory
         self.memory.clear()
         
+        return {
+            'policy_loss': avg_policy_loss,
+            'value_loss': avg_value_loss,
+            'entropy_loss': avg_entropy_loss,
+            'total_loss': avg_total_loss,
+            'grad_norm': grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm,
+            'update_time': update_time
+        }
+        
     def store_transition(self, state, action, reward, done, log_prob, value):
         self.memory.store(state, action, reward, done, log_prob, value)
         self.steps_done += 1
+        # Track current reward for display
+        self.current_step_reward = reward
         
-    def end_episode(self, episode_reward, episode_length):
+    def end_episode(self, episode_info):
+        """Enhanced episode ending with comprehensive logging"""
+        episode_reward = episode_info.get('total_reward', 0)
+        episode_length = episode_info.get('total_actions', 0)
+        
         self.episode_rewards.append(episode_reward)
         self.episode_lengths.append(episode_length)
+        
+        # Update frame display with comprehensive episode data
+        episode_info['episode'] = len(self.episode_rewards)
+        self.frame_display.update_episode_data(episode_info)
+        
+        # Log to enhanced logger if available
+        if self.logger:
+            self.logger.log_episode(
+                episode=len(self.episode_rewards),
+                reward=episode_reward,
+                length=episode_length,
+                max_x_pos=episode_info.get('max_x_position', 0),
+                level_completed=episode_info.get('level_completed', False),
+                action_counts=episode_info.get('action_distribution', {}),
+                death_reason=episode_info.get('death_reason', 'unknown')
+            )
+        
+        # Reset episode action counts
+        self.episode_action_counts.clear()
+        
+    def set_logger(self, logger):
+        """Set the enhanced training logger"""
+        self.logger = logger
         
     def update_visualization(self, episode_reward, episode):
         """Update the training visualization - disabled matplotlib, only console output"""

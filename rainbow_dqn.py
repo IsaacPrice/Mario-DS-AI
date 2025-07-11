@@ -252,7 +252,7 @@ class RainbowDQNAgent:
         self.losses = []
         
         # Frame display for visualization
-        self.frame_display = FrameDisplay(frame_shape=(64, 96), scale=4, spacing=5, window_size=(640, 480), num_q_values=8)
+        self.frame_display = FrameDisplay(frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=8)
         
         # Disable matplotlib visualization - keep only emulator display
         # self.fig, self.axes = plt.subplots(2, 2, figsize=(12, 8))
@@ -270,7 +270,7 @@ class RainbowDQNAgent:
             q_values = (q_dist * self.support).sum(dim=2)
             action = q_values.argmax(dim=1).item()
             
-            # Display frames and Q-values
+            # Display frames and Q-values (Rainbow DQN doesn't have separate rewards/losses to display)
             self.frame_display.display_frames(state['frames'], q_values.squeeze(0))
         
         return action
@@ -408,3 +408,35 @@ class RainbowDQNAgent:
         self.step_count = checkpoint['step_count']
         self.episode_rewards = checkpoint['episode_rewards']
         self.losses = checkpoint['losses']
+        
+    def end_episode(self, episode_info):
+        """Enhanced episode ending with comprehensive logging"""
+        episode_reward = episode_info.get('total_reward', 0)
+        episode_length = episode_info.get('total_actions', 0)
+        
+        self.episode_rewards.append(episode_reward)
+        
+        # Update frame display with comprehensive episode data if available
+        if hasattr(self, 'frame_display') and self.frame_display:
+            episode_info['episode'] = len(self.episode_rewards)
+            self.frame_display.update_episode_data(episode_info)
+        
+        # Log to enhanced logger if available
+        if hasattr(self, 'logger') and self.logger:
+            self.logger.log_episode(
+                episode=len(self.episode_rewards),
+                reward=episode_reward,
+                length=episode_length,
+                max_x_pos=episode_info.get('max_x_position', 0),
+                level_completed=episode_info.get('level_completed', False),
+                action_counts=episode_info.get('action_distribution', {}),
+                death_reason=episode_info.get('death_reason', 'unknown')
+            )
+        
+    def set_logger(self, logger):
+        """Set the enhanced training logger"""
+        self.logger = logger
+
+    def set_frame_display(self, frame_display):
+        """Set the frame display for logging"""
+        self.frame_display = frame_display

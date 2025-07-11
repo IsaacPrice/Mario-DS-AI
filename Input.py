@@ -84,3 +84,12 @@ class Input:
     def run_jump_right_long(self):
         """Running jump right (run + jump together) for 5 frames - for tall obstacles"""
         self.set_action([Keys.KEY_X, Keys.KEY_A, Keys.KEY_RIGHT], 5)
+    
+    # Additional backward movement actions for strategic positioning
+    def hold_jump_left_medium(self):
+        """Hold jump+left for 4 frames (medium sustained jump backward)"""
+        self.set_action([Keys.KEY_A, Keys.KEY_LEFT], 4)
+    
+    def run_jump_left(self):
+        """Running jump left (run + jump together) for 3 frames - for backing up with momentum"""
+        self.set_action([Keys.KEY_X, Keys.KEY_A, Keys.KEY_LEFT], 3)

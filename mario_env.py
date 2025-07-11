@@ -1,17 +1,22 @@
+import random
 import gym
 from gym import spaces
 import numpy as np
+import time
 from Input import Input
 from DataProccesing import *
 from desmume.emulator import DeSmuME, DeSmuME_Savestate, DeSmuME_Memory, MemoryAccessor
 from pympler.tracker import SummaryTracker
-
 
 import os
 import sys
 from PIL import Image
 
 from moviepy.editor import ImageSequenceClip
+
+valid_saves = [
+    "saves/W1-3.sav",
+]
 
 def create_episode_video(images, episode_number):
     output_path = f'episodes/episode_{episode_number}.mp4'
@@ -46,8 +51,8 @@ class MarioDSEnv(gym.Env):
         
         # Create action and observation space
         if ppo_optimized:
-            # Enhanced action space for PPO with sustained jumps for tall obstacles
-            self.action_space = spaces.Discrete(10)  # Increased from 6 to 10 actions
+            # Enhanced action space for PPO with sustained jumps and minimal backward movement
+            self.action_space = spaces.Discrete(10)  # Back to 10 actions with just one left movement
             # Enhanced observation space with higher resolution for better platform detection
             self.observation_space = spaces.Box(low=0, high=1, shape=(frame_stack, 64, 96), dtype=np.float32)
         else:
@@ -66,12 +71,12 @@ class MarioDSEnv(gym.Env):
         self.emu.open('NSMB.nds')
         self.window = self.emu.create_sdl_window()
         self.saver = DeSmuME_Savestate(self.emu)
-        self.saver.load_file('W1-3.sav')
+        self.saver.load_file(valid_saves[random.randint(0, len(valid_saves) - 1)])
 
         self.frame_count = 0
         self.inputs = Input(self.emu)
         
-        # PPO-optimized action mapping with sustained jumps
+        # PPO-optimized action mapping with sustained jumps and single backward movement
         if ppo_optimized:
             self.action_mapping = {
                 0: self.inputs.none,                    # Do nothing
@@ -83,7 +88,7 @@ class MarioDSEnv(gym.Env):
                 6: self.inputs.hold_jump_right_long,    # Long sustained jump (5 frames) - for tall obstacles
                 7: self.inputs.run_jump_right,          # Running jump (3 frames)
                 8: self.inputs.run_jump_right_long,     # Long running jump (5 frames) - for tall obstacles
-                9: self.inputs.walk_left,               # Walk left (when needed)
+                9: self.inputs.walk_left,               # Walk left (for backing up when needed)
             }
         else:
             # Original DQN action mapping
@@ -103,10 +108,16 @@ class MarioDSEnv(gym.Env):
         self.frame_stack = np.zeros(((self.frame_skip * self.frame_stack_num), 64, 96), dtype=np.float32)
         self.episode_frames = []
         
-        # Track previous position for reward calculation
+        # Track previous position for reward calculation and detailed analytics
         self.prev_x_pos = 0
         self.max_x_pos = 0
         self.step_count = 0
+        self.episode_start_time = 0
+        self.stuck_count = 0  # Track how long Mario stays in same position
+        self.last_progress_step = 0  # Track when progress was last made
+        self.episode_reward = 0  # Track total episode reward
+        self.episode_actions = []  # Track actions taken during episode
+        self.death_reason = "unknown"  # Track why episode ended
         
         # Initialize action history (only for DQN mode)
         if not ppo_optimized:
@@ -152,14 +163,32 @@ class MarioDSEnv(gym.Env):
         self.frame_stack = self.frame_stack[1:, :, :]  # Remove the oldest frame
 
         # 3. Calculate the reward with better shaping for PPO
-        if self.ppo_optimized:
-            reward = self._calculate_ppo_reward(dead)
+        current_x_pos = self.emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000
+        reward = current_x_pos - 0.01
+        
+        # Update position tracking
+        if current_x_pos > self.max_x_pos:
+            self.max_x_pos = current_x_pos
+            self.last_progress_step = self.step_count
+            self.stuck_count = 0
         else:
-            reward = (self.emu.memory.signed[0x021B6A90:0x021B6A90:4] / 20000) - 0.01
+            self.stuck_count += 1
+        
+        self.prev_x_pos = current_x_pos
+        
+        # Track episode data
+        self.episode_reward += reward
+        self.episode_actions.append(action)
+        
+        # Set death reason
+        if dead:
+            self.death_reason = "enemy_or_pit"
+        elif self.frame_count > 3000:
+            self.death_reason = "timeout"
             
         if dead or self.frame_count > 3000:
             dead = True
-            reward = -3 if not self.ppo_optimized else -1
+            reward = -1
 
         info = {"errors": "No errors"}  # Additional info for debugging, if necessary
 
@@ -192,17 +221,23 @@ class MarioDSEnv(gym.Env):
         self.episode_frames = []
         self.frame_count = 0
         self.step_count = 0
+        self.episode_start_time = time.time()
 
         # Reset position tracking for PPO
         self.prev_x_pos = 0
         self.max_x_pos = 0
+        self.stuck_count = 0
+        self.last_progress_step = 0
+        self.episode_reward = 0
+        self.episode_actions = []
+        self.death_reason = "unknown"
 
         # Reset action history (only for DQN mode)
         if not self.ppo_optimized:
             self.action_history = [0] * self.action_history_length
 
         # Load the savestate
-        self.saver.load_file('W1-3.sav')
+        self.saver.load_file(valid_saves[random.randint(0, len(valid_saves) - 1)])
 
         self.frame_stack = np.zeros(((self.frame_skip * self.frame_stack_num), 64, 96), dtype=np.float32)
 
@@ -219,6 +254,23 @@ class MarioDSEnv(gym.Env):
                 'action_history': np.array(self.action_history, dtype=np.int32)
             }
             return initial_observation
+    
+    def get_episode_info(self):
+        """Get comprehensive episode information for logging"""
+        return {
+            'max_x_position': self.max_x_pos,
+            'final_x_position': self.prev_x_pos,
+            'episode_duration': time.time() - self.episode_start_time,
+            'stuck_count': self.stuck_count,
+            'last_progress_step': self.last_progress_step,
+            'total_frames': len(self.episode_frames),
+            'total_reward': self.episode_reward,
+            'total_actions': len(self.episode_actions),
+            'action_distribution': {i: self.episode_actions.count(i) for i in range(self.action_space.n)},
+            'death_reason': self.death_reason,
+            'level_completed': self.max_x_pos > 0.8,  # Assuming level completion threshold
+            'average_progress_per_step': self.max_x_pos / max(self.step_count, 1)
+        }
 
     def render(self, mode='human'):
         if mode == 'rgb_array':
@@ -230,38 +282,5 @@ class MarioDSEnv(gym.Env):
         self.emu.destroy()
         self.window.destroy()
         
-    def _calculate_ppo_reward(self, dead):
-        """
-        Calculate a more informative reward for PPO training
-        """
-        # Get Mario's current position
-        current_x_pos = self.emu.memory.signed[0x021B6A90:0x021B6A90:4]
-        
-        # Progress reward - encourage moving right
-        progress_reward = (current_x_pos - self.prev_x_pos) / 1000.0
-        
-        # Max progress bonus - reward for reaching new maximum positions
-        max_progress_bonus = 0
-        if current_x_pos > self.max_x_pos:
-            max_progress_bonus = 0.5
-            self.max_x_pos = current_x_pos
-        
-        # Time penalty - small penalty to encourage faster completion
-        time_penalty = -0.01
-        
-        # Inactivity penalty - penalize staying in same position
-        inactivity_penalty = 0
-        if abs(current_x_pos - self.prev_x_pos) < 50:  # Very small movement
-            inactivity_penalty = -0.02
-        
-        # Death penalty
-        death_penalty = -10 if dead else 0
-        
-        # Update previous position
-        self.prev_x_pos = current_x_pos
-        
-        # Combine all rewards
-        total_reward = progress_reward + max_progress_bonus + time_penalty + inactivity_penalty + death_penalty
-        
-        return total_reward
+
 

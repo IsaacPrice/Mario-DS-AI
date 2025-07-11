@@ -3,6 +3,9 @@ from PIL import Image
 from skimage.transform import resize
 import os
 
+acceptable_values = [340384, 340624, 340912, 343718, 341731, 342497, 340397, 340489, 
+                     340437, 341367, 342297, 342387, 342471, 342798, 342406, 340332]
+
 def preprocess_image_numpy(image, width=64, height=48, contrast_factor=3):
     # Apply contrast enhancement to the original color image first
     image_array = np.array(image)
@@ -74,9 +77,9 @@ def preprocess_image_ppo_enhanced(image, width=96, height=64, contrast_factor=3.
     image_enhanced = Image.fromarray(image_contrasted)
     
     # Check for death using line detection
-    line = np.array(gray_image.crop((0, 237, 256, 238)))
+    line = np.array(gray_image.crop((0, 237, 256, 245)))
     line_sum = np.sum(line)
-    dead = line_sum == 44044 or line_sum != 43342
+    dead = line_sum not in acceptable_values
 
     
     # Crop and resize the main image with higher resolution
