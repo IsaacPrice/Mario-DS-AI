@@ -3,13 +3,14 @@ import numpy as np
 
 
 class PPOMemory:
-    def __init__(self):
+    def __init__(self, binary_mode=False):
         self.states = []
         self.actions = []
         self.rewards = []
         self.dones = []
         self.old_log_probs = []
         self.old_values = []
+        self.binary_mode = binary_mode
     
     
     def store(self, state, action, reward, done, log_prob, value):
@@ -32,7 +33,12 @@ class PPOMemory:
 
     def get_tensors(self, device):
         frames = torch.FloatTensor(self.states).to(device)
-        actions = torch.LongTensor(self.actions).to(device)
+        
+        if self.binary_mode:
+            actions = torch.FloatTensor(self.actions).to(device)
+        else:
+            actions = torch.LongTensor(self.actions).to(device)
+            
         rewards = torch.FloatTensor(self.rewards).to(device)
 
         dones_array = np.array(self.dones, dtype=bool)

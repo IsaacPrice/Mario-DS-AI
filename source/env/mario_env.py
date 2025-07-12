@@ -32,11 +32,16 @@ tracker = SummaryTracker()
 class MarioDSEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
 
-    def __init__(self, frame_skip=5, frame_stack=4, ppo_optimized=True):
+    def __init__(self, frame_skip=5, frame_stack=4, ppo_optimized=True, binary_mode=True):
         super(MarioDSEnv, self).__init__()
 
         self.ppo_optimized = ppo_optimized
-        if ppo_optimized:
+        self.binary_mode = binary_mode
+        
+        if binary_mode:
+            self.action_space = spaces.MultiBinary(6)
+            self.observation_space = spaces.Box(low=0, high=1, shape=(frame_stack, 64, 96), dtype=np.float32)
+        elif ppo_optimized:
             self.action_space = spaces.Discrete(10)  # Back to 10 actions with just one left movement
             self.observation_space = spaces.Box(low=0, high=1, shape=(frame_stack, 64, 96), dtype=np.float32)
         else:
@@ -58,7 +63,9 @@ class MarioDSEnv(gym.Env):
         self.frame_count = 0
         self.inputs = Input(self.emu)
         
-        if ppo_optimized:
+        if binary_mode:
+            self.action_mapping = None
+        elif ppo_optimized:
             self.action_mapping = {
                 0: self.inputs.none,                    # Do nothing
                 1: self.inputs.walk_right,              # Walk right (main direction)
@@ -106,10 +113,15 @@ class MarioDSEnv(gym.Env):
 
     def step(self, action):
         self.current_stack = self.frame_stack
-        self.action_mapping[action]()
+        
+        if self.binary_mode:
+            self.inputs.set_binary_input(action)
+        else:
+            self.action_mapping[action]()
+            
         self.inputs.execute_action()
 
-        if not self.ppo_optimized:
+        if not self.ppo_optimized and not self.binary_mode:
             self.action_history.append(action)
             self.action_history.pop(0)  # Remove the oldest action
 

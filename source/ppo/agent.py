@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.distributions import Categorical
+from torch.distributions import Categorical, Bernoulli
 import numpy as np
 from collections import defaultdict
 import time
@@ -13,7 +13,7 @@ from source.ppo.network import PPONetwork
 class PPOAgent:
     def __init__(self, input_shape, n_actions, lr=3e-4, gamma=0.99, eps_clip=0.2, 
                  k_epochs=4, entropy_coef=0.01, value_coef=0.5, max_grad_norm=0.5,
-                 update_timestep=4096, gae_lambda=0.95):
+                 update_timestep=4096, gae_lambda=0.95, binary_mode=True):
         print(torch.cuda.is_available())
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
@@ -29,10 +29,12 @@ class PPOAgent:
         self.max_grad_norm = max_grad_norm
         self.update_timestep = update_timestep
         self.gae_lambda = gae_lambda
+        self.binary_mode = binary_mode
         
-        self.policy = PPONetwork(input_shape, n_actions).to(self.device)
-        self.memory = PPOMemory()
-        self.frame_display = FrameDisplay(frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=10)
+        self.policy = PPONetwork(input_shape, n_actions, binary_mode=binary_mode).to(self.device)
+        self.memory = PPOMemory(binary_mode=binary_mode)
+        
+        self.frame_display = FrameDisplay(frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=n_actions, binary_mode=binary_mode)
         
         self.logger = None 
         self.episode_rewards = []
@@ -47,30 +49,40 @@ class PPOAgent:
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
 
 
-    def select_action(self, state):
+    def select_action(self, state, current_binary_input=None):
         with torch.no_grad():
             frames = torch.FloatTensor(state).unsqueeze(0).to(self.device)
             action, log_prob, value = self.policy.act(frames)
             
-            self.action_counts[action] += 1
-            self.episode_action_counts[action] += 1
+            if self.binary_mode:
+                for i, pressed in enumerate(action):
+                    if pressed:
+                        self.action_counts[i] += 1
+                        self.episode_action_counts[i] += 1
+            else:
+                self.action_counts[action] += 1
+                self.episode_action_counts[action] += 1
             
             action_probs, _ = self.policy.forward(frames)
             self.frame_display.display_frames(
                 state, 
                 action_probs.squeeze(0), 
                 current_reward=self.current_step_reward, 
-                current_loss=self.current_loss if self.current_loss > 0 else None
+                current_loss=self.current_loss if self.current_loss > 0 else None,
+                current_binary_input=current_binary_input
             )
             
-        return action, log_prob.item(), value.item()
+        if self.binary_mode:
+            return action, log_prob.item(), value.item()
+        else:
+            return action, log_prob.item(), value.item()
     
 
-    def act(self, state, training=True):
+    def act(self, state, training=True, current_binary_input=None):
         if training:
-            return self.select_action(state)
+            return self.select_action(state, current_binary_input)
         else:
-            action, _, _ = self.select_action(state)
+            action, _, _ = self.select_action(state, current_binary_input)
             return action
     
 
@@ -119,9 +131,19 @@ class PPOAgent:
         
         for epoch in range(self.k_epochs):
             action_probs, values = self.policy(frames)
-            dist = Categorical(action_probs)
-            new_log_probs = dist.log_prob(actions)
-            entropy = dist.entropy().mean()
+            
+            if self.binary_mode:
+                dists = [Bernoulli(action_probs[:, i]) for i in range(action_probs.shape[1])]
+                
+                new_log_probs = torch.stack([
+                    dist.log_prob(actions[:, i]) for i, dist in enumerate(dists)
+                ], dim=1).sum(dim=1)
+                
+                entropy = torch.stack([dist.entropy() for dist in dists], dim=1).sum(dim=1).mean()
+            else:
+                dist = Categorical(action_probs)
+                new_log_probs = dist.log_prob(actions)
+                entropy = dist.entropy().mean()
             
             ratio = torch.exp(new_log_probs - old_log_probs)
             surr1 = ratio * advantages

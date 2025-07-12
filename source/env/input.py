@@ -6,21 +6,45 @@ class Input:
         self.keys = [Keys.KEY_A, Keys.KEY_X, Keys.KEY_LEFT, Keys.KEY_RIGHT, Keys.KEY_DOWN, Keys.KEY_UP]
         self.action_duration = 0  # Tracks how many frames to hold current action
         self.current_keys = []    # Tracks which keys are currently being held
+        self.frame_persist_counter = 0  # Counter for frame persistence
+        self.frame_persist_limit = 3    # Hold input for 5 frames
+        self.current_binary_input = [0, 0, 0, 0, 0, 0]  # [UP, DOWN, LEFT, RIGHT, X, A]
+
 
     def release_all(self):
         for key in self.keys:
             self.emu.input.keypad_rm_key(keymask(key))
         self.current_keys = []
         self.action_duration = 0
+        self.current_binary_input = [0, 0, 0, 0, 0, 0]
+
+
+    def set_binary_input(self, binary_input):
+        if self.frame_persist_counter >= self.frame_persist_limit or self.frame_persist_counter == 0:
+            self.current_binary_input = binary_input.copy()
+            self.frame_persist_counter = 0
+            
+            for key in self.keys:
+                self.emu.input.keypad_rm_key(keymask(key))
+            
+            key_mapping = [Keys.KEY_UP, Keys.KEY_DOWN, Keys.KEY_LEFT, Keys.KEY_RIGHT, Keys.KEY_X, Keys.KEY_A]
+            self.current_keys = []
+            
+            for i, pressed in enumerate(binary_input):
+                if pressed:
+                    self.emu.input.keypad_add_key(keymask(key_mapping[i]))
+                    self.current_keys.append(key_mapping[i])
+        
+        self.frame_persist_counter += 1
+
+    def get_current_binary_input(self):
+        return self.current_binary_input.copy()
+
 
     def execute_action(self):
-        """Call this every frame to handle multi-frame actions"""
-        if self.action_duration > 0:
-            # Continue holding current keys
-            self.action_duration -= 1
-            if self.action_duration == 0:
-                self.release_all()
-        
+        pass
+
+
     def set_action(self, keys_to_press, duration=1):
         """Set an action to be held for a specific duration"""
         self.release_all()
@@ -30,6 +54,7 @@ class Input:
         for key in keys_to_press:
             self.emu.input.keypad_add_key(keymask(key))
 
+    # Legacy action methods for backward compatibility
     def none(self):
         self.set_action([], 1)
 

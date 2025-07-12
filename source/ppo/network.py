@@ -1,13 +1,16 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import Categorical
+from torch.distributions import Categorical, Bernoulli
 import numpy as np
 
 
 class PPONetwork(nn.Module):
-    def __init__(self, input_shape, n_actions, hidden_size=512):
+    def __init__(self, input_shape, n_actions=6, hidden_size=512, binary_mode=True):
         super(PPONetwork, self).__init__()
+        
+        self.binary_mode = binary_mode
+        self.n_actions = n_actions
         
         self.conv1 = nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
@@ -17,7 +20,11 @@ class PPONetwork(nn.Module):
         self.shared_fc = nn.Linear(conv_out_size, hidden_size)
         
         self.actor_fc = nn.Linear(hidden_size, hidden_size)
-        self.actor_out = nn.Linear(hidden_size, n_actions)
+        
+        if binary_mode:
+            self.actor_out = nn.Linear(hidden_size, 6)  # [UP, DOWN, LEFT, RIGHT, X, A]
+        else:
+            self.actor_out = nn.Linear(hidden_size, n_actions)
         
         self.critic_fc = nn.Linear(hidden_size, hidden_size)
         self.critic_out = nn.Linear(hidden_size, 1)
@@ -39,7 +46,12 @@ class PPONetwork(nn.Module):
         
         shared = F.relu(self.shared_fc(x))
         actor = F.relu(self.actor_fc(shared))
-        action_probs = F.softmax(self.actor_out(actor), dim=1)
+        
+        if self.binary_mode:
+            action_probs = torch.sigmoid(self.actor_out(actor))
+        else:
+            action_probs = F.softmax(self.actor_out(actor), dim=1)
+        
         critic = F.relu(self.critic_fc(shared))
         value = self.critic_out(critic)
         
@@ -48,10 +60,21 @@ class PPONetwork(nn.Module):
     
     def act(self, frames):
         action_probs, value = self.forward(frames)
-        dist = Categorical(action_probs)
-        action = dist.sample()
-        log_prob = dist.log_prob(action)
         
-        return action.item(), log_prob, value
+        if self.binary_mode:
+            dists = [Bernoulli(prob) for prob in action_probs.squeeze()]
+            actions = [dist.sample() for dist in dists]
+            log_probs = [dist.log_prob(action) for dist, action in zip(dists, actions)]
+            
+            binary_actions = [action.item() for action in actions]
+            total_log_prob = sum(log_probs)
+            
+            return binary_actions, total_log_prob, value
+        else:
+            dist = Categorical(action_probs)
+            action = dist.sample()
+            log_prob = dist.log_prob(action)
+            
+            return action.item(), log_prob, value
     
     

@@ -8,12 +8,13 @@ import time
 
 
 class FrameDisplay:
-    def __init__(self, frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=10):
+    def __init__(self, frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=10, binary_mode=False):
         self.frame_shape = frame_shape
         self.scale = scale
         self.spacing = spacing
         self.window_size = window_size
         self.num_actions = num_actions
+        self.binary_mode = binary_mode
         self.bar_height = 80  
         
         self.reward_history = deque(maxlen=1000)
@@ -29,18 +30,28 @@ class FrameDisplay:
         
         self._init_csv_files()
         
-        self.action_names = [
-            "None",           # 0: Do nothing
-            "Walk->",          # 1: Walk right
-            "Run->",           # 2: Run right
-            "Jump->",         # 3: Quick jump right
-            "Hold3->",        # 4: Hold jump right (3 frames)
-            "Hold4->",        # 5: Hold jump right (4 frames)
-            "Hold5->",        # 6: Hold jump right (5 frames) - tall jumps
-            "RunJump3->",    # 7: Running jump (3 frames)
-            "RunJump5->",    # 8: Long running jump (5 frames) - tall jumps
-            "Walk<-",        # 9: Walk left (for backing up)
-        ]
+        if binary_mode:
+            self.action_names = [
+                "UP",      # 0: Up
+                "DOWN",    # 1: Down  
+                "LEFT",    # 2: Left
+                "RIGHT",   # 3: Right
+                "X",       # 4: X (run)
+                "A",       # 5: A (jump)
+            ]
+        else:
+            self.action_names = [
+                "None",           # 0: Do nothing
+                "Walk->",          # 1: Walk right
+                "Run->",           # 2: Run right
+                "Jump->",         # 3: Quick jump right
+                "Hold3->",        # 4: Hold jump right (3 frames)
+                "Hold4->",        # 5: Hold jump right (4 frames)
+                "Hold5->",        # 6: Hold jump right (5 frames) - tall jumps
+                "RunJump3->",    # 7: Running jump (3 frames)
+                "RunJump5->",    # 8: Long running jump (5 frames) - tall jumps
+                "Walk<-",        # 9: Walk left (for backing up)
+            ]
 
 
     def _init_csv_files(self):
@@ -55,11 +66,13 @@ class FrameDisplay:
                 writer.writerow(['timestamp', 'episode', 'total_reward', 'max_x_pos', 'death_reason', 'level_completed', 'duration'])
 
 
-    def display_frames(self, array, action_probs, current_reward=None, current_loss=None):
+    def display_frames(self, array, action_probs, current_reward=None, current_loss=None, current_binary_input=None):
         if array.shape[1:] != self.frame_shape:
             raise ValueError(f"Each frame in the array must be of shape {self.frame_shape}")
-        if len(action_probs) != self.num_actions:
-            raise ValueError(f"Number of action probabilities must be {self.num_actions}")
+        
+        expected_probs = 6 if self.binary_mode else len(self.action_names)
+        if len(action_probs) != expected_probs:
+            raise ValueError(f"Number of action probabilities must be {expected_probs}, got {len(action_probs)}")
 
         if current_reward is not None:
             self._log_step_data(current_reward, current_loss)
@@ -69,11 +82,12 @@ class FrameDisplay:
         concatenated_frames = self._concatenate_frames(resized_frames, self.spacing)
 
         frame_width = concatenated_frames.shape[1]
-        action_probs_frame = self._create_action_probabilities_bar(action_probs, frame_width)
+        action_probs_frame = self._create_action_probabilities_bar(action_probs, frame_width, current_binary_input)
         final_frame = np.vstack([concatenated_frames, action_probs_frame])
         final_frame = self._center_in_window(final_frame, self.window_size)
 
-        cv2.imshow('PPO Mario DS - Frame Stack with Action Probabilities', final_frame)
+        window_title = 'PPO Mario DS - Binary Input' if self.binary_mode else 'PPO Mario DS - Frame Stack with Action Probabilities'
+        cv2.imshow(window_title, final_frame)
         cv2.waitKey(1)
 
 
@@ -113,47 +127,84 @@ class FrameDisplay:
                                   horizontal_padding, horizontal_padding, 
                                   cv2.BORDER_CONSTANT, value=[0, 0, 0])
     
-    def _create_action_probabilities_bar(self, action_probs, width):
+    def _create_action_probabilities_bar(self, action_probs, width, current_binary_input=None):
         if hasattr(action_probs, 'cpu'):
             action_probs = action_probs.cpu().numpy()
         
-        max_prob = np.max(action_probs)
-        if max_prob > 0:
-            probs_normalized = (action_probs / max_prob) * (self.bar_height - 20)
+        num_bars = len(action_probs)
+        
+        if self.binary_mode:
+            probs_normalized = action_probs * (self.bar_height - 20)
         else:
-            probs_normalized = np.zeros_like(action_probs)
+            max_prob = np.max(action_probs)
+            if max_prob > 0:
+                probs_normalized = (action_probs / max_prob) * (self.bar_height - 20)
+            else:
+                probs_normalized = np.zeros_like(action_probs)
 
-        bar_width = int(width / self.num_actions)
+        bar_width = int(width / num_bars)
         probs_frame = np.zeros((self.bar_height, width), dtype=np.uint8)
 
-        max_action = np.argmax(action_probs)
-
-        for i, (prob, norm_value) in enumerate(zip(action_probs, probs_normalized)):
-            left = i * bar_width
-            right = min(left + bar_width - 2, width - 1)  
-            top = self.bar_height - int(norm_value) - 15  
+        if self.binary_mode:
+            for i, (prob, norm_value) in enumerate(zip(action_probs, probs_normalized)):
+                left = i * bar_width
+                right = min(left + bar_width - 2, width - 1)  
+                top = self.bar_height - int(norm_value) - 15  
+                
+                is_pressed = current_binary_input is not None and current_binary_input[i] == 1
+                if is_pressed:
+                    bar_color = 255  # White for pressed buttons
+                else:
+                    bar_color = 120  # Gray for unpressed buttons
+                
+                cv2.rectangle(probs_frame, (left + 2, top), (right, self.bar_height - 15), bar_color, -1)
+                
+                prob_text = f"{prob*100:.0f}%"
+                text_size = cv2.getTextSize(prob_text, cv2.FONT_HERSHEY_SIMPLEX, 0.3, 1)[0]
+                text_x = max(left + (bar_width - text_size[0]) // 2, 0)
+                text_y = max(top - 2, 10)
+                if text_x + text_size[0] < width:
+                    cv2.putText(probs_frame, prob_text, (text_x, text_y), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 0, 0), 2, cv2.LINE_AA)
+                    cv2.putText(probs_frame, prob_text, (text_x, text_y), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
+                
+                action_name = self.action_names[i] if i < len(self.action_names) else f"A{i}"
+                name_size = cv2.getTextSize(action_name, cv2.FONT_HERSHEY_SIMPLEX, 0.3, 1)[0]
+                name_x = max(left + (bar_width - name_size[0]) // 2, 0)
+                name_y = self.bar_height - 3
+                if name_x + name_size[0] < width:
+                    cv2.putText(probs_frame, action_name, (name_x, name_y), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 0, 0), 2, cv2.LINE_AA)
+                    cv2.putText(probs_frame, action_name, (name_x, name_y), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
+        else:
+            max_action = np.argmax(action_probs)
             
-            bar_color = 200 if i == max_action else 120
-            cv2.rectangle(probs_frame, (left + 2, top), (right, self.bar_height - 15), bar_color, -1)
-            
-            prob_text = f"{prob*100:.0f}%"
-            text_size = cv2.getTextSize(prob_text, cv2.FONT_HERSHEY_SIMPLEX, 0.3, 1)[0]
-            text_x = max(left + (bar_width - text_size[0]) // 2, 0)
-            text_y = max(top - 2, 10)
-            if text_x + text_size[0] < width:  
-                cv2.putText(probs_frame, prob_text, (text_x, text_y), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
-            
-            action_name = self.action_names[i] if i < len(self.action_names) else f"A{i}"
-            name_size = cv2.getTextSize(action_name, cv2.FONT_HERSHEY_SIMPLEX, 0.3, 1)[0]
-            name_x = max(left + (bar_width - name_size[0]) // 2, 0)
-            name_y = self.bar_height - 3
-            
-            text_color = (255, 255, 255) if i == max_action else (180, 180, 180)
-            if name_x + name_size[0] < width:  
-                cv2.putText(probs_frame, action_name, (name_x, name_y), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.3, text_color, 1, cv2.LINE_AA)
-
+            for i, (prob, norm_value) in enumerate(zip(action_probs, probs_normalized)):
+                left = i * bar_width
+                right = min(left + bar_width - 2, width - 1)  
+                top = self.bar_height - int(norm_value) - 15  
+                
+                bar_color = 200 if i == max_action else 120
+                cv2.rectangle(probs_frame, (left + 2, top), (right, self.bar_height - 15), bar_color, -1)
+                
+                prob_text = f"{prob*100:.0f}%"
+                text_size = cv2.getTextSize(prob_text, cv2.FONT_HERSHEY_SIMPLEX, 0.3, 1)[0]
+                text_x = max(left + (bar_width - text_size[0]) // 2, 0)
+                text_y = max(top - 2, 10)
+                if text_x + text_size[0] < width:  
+                    cv2.putText(probs_frame, prob_text, (text_x, text_y), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
+                
+                action_name = self.action_names[i] if i < len(self.action_names) else f"A{i}"
+                name_size = cv2.getTextSize(action_name, cv2.FONT_HERSHEY_SIMPLEX, 0.3, 1)[0]
+                name_x = max(left + (bar_width - name_size[0]) // 2, 0)
+                name_y = self.bar_height - 3
+                if name_x + name_size[0] < width:
+                    cv2.putText(probs_frame, action_name, (name_x, name_y), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
+        
         return probs_frame
 
 

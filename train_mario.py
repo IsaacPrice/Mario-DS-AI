@@ -138,8 +138,16 @@ def train_rainbow_dqn(env, episodes=1000, save_interval=100, load_model=None, lo
 def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=False, load_latest=False):
     print("Training with PPO...")
     
-    frame_shape = env.observation_space.shape 
-    n_actions = env.action_space.n  
+    binary_mode = hasattr(env, 'binary_mode') and env.binary_mode
+    
+    if binary_mode:
+        frame_shape = env.observation_space.shape 
+        n_actions = 6  # [UP, DOWN, LEFT, RIGHT, X, A]
+        print(f"Using binary mode with {n_actions} binary actions")
+    else:
+        frame_shape = env.observation_space.shape 
+        n_actions = env.action_space.n
+        print(f"Using discrete mode with {n_actions} discrete actions")
     
     agent = PPOAgent(
         input_shape=frame_shape,
@@ -152,7 +160,8 @@ def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=
         value_coef=0.5,
         max_grad_norm=0.5,
         update_timestep=2048,
-        gae_lambda=0.95
+        gae_lambda=0.95,
+        binary_mode=binary_mode
     )
     
     model_loaded = load_model_if_specified(agent, 'ppo', load_model, load_best, load_latest)
@@ -175,7 +184,12 @@ def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=
         print(f"\nEpisode {episode + 1}/{episodes}")
         
         while not done:
-            action, log_prob, value = agent.act(state, training=True)
+            # Get current binary input state for display
+            current_binary_input = None
+            if hasattr(env, 'binary_mode') and env.binary_mode and hasattr(env, 'inputs'):
+                current_binary_input = env.inputs.get_current_binary_input()
+            
+            action, log_prob, value = agent.act(state, training=True, current_binary_input=current_binary_input)
             next_state, reward, done, truncated, info = env.step(action)
             agent.store_transition(state, action, reward, done, log_prob, value)
             agent.update()
@@ -238,7 +252,8 @@ def main():
     print("Initializing Mario DS Environment...")
     
     ppo_optimized = (args.algorithm == 'ppo')
-    env = MarioDSEnv(frame_skip=args.frame_skip, frame_stack=args.frame_stack, ppo_optimized=ppo_optimized)
+    binary_mode = True  # Enable binary mode by default
+    env = MarioDSEnv(frame_skip=args.frame_skip, frame_stack=args.frame_stack, ppo_optimized=ppo_optimized, binary_mode=binary_mode)
     
     try:
         if args.mode == 'train':
