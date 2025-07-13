@@ -1,13 +1,13 @@
 from desmume.controls import Keys, keymask
 
 class Input:
-    def __init__(self, emu):
+    def __init__(self, emu, action_repeat_frames=3):
         self.emu = emu
         self.keys = [Keys.KEY_A, Keys.KEY_X, Keys.KEY_LEFT, Keys.KEY_RIGHT, Keys.KEY_DOWN, Keys.KEY_UP]
         self.action_duration = 0  # Tracks how many frames to hold current action
         self.current_keys = []    # Tracks which keys are currently being held
         self.frame_persist_counter = 0  # Counter for frame persistence
-        self.frame_persist_limit = 3    # Hold input for 5 frames
+        self.frame_persist_limit = action_repeat_frames    # Hold input for N frames
         self.current_binary_input = [0, 0, 0, 0, 0, 0]  # [UP, DOWN, LEFT, RIGHT, X, A]
 
 

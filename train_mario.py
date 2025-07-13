@@ -55,7 +55,7 @@ def load_model_if_specified(agent, algorithm, load_model=None, load_best=False, 
     return False
 
 
-def train_rainbow_dqn(env, episodes=1000, save_interval=100, load_model=None, load_best=False, load_latest=False):
+def train_rainbow_dqn(env, episodes=1000, save_interval=100, load_model=None, load_best=False, load_latest=False, enable_display=True):
     print("Training with Rainbow DQN...")
     
     frame_shape = env.observation_space['frames'].shape  
@@ -77,7 +77,8 @@ def train_rainbow_dqn(env, episodes=1000, save_interval=100, load_model=None, lo
         n_atoms=51,
         v_min=-10,
         v_max=10,
-        multi_step=3
+        multi_step=3,
+        enable_display=enable_display
     )
     
     model_loaded = load_model_if_specified(agent, 'rainbow_dqn', load_model, load_best, load_latest)
@@ -135,7 +136,7 @@ def train_rainbow_dqn(env, episodes=1000, save_interval=100, load_model=None, lo
     return agent
 
 
-def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=False, load_latest=False):
+def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=False, load_latest=False, enable_display=True):
     print("Training with PPO...")
     
     binary_mode = hasattr(env, 'binary_mode') and env.binary_mode
@@ -161,7 +162,8 @@ def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=
         max_grad_norm=0.5,
         update_timestep=2048,
         gae_lambda=0.95,
-        binary_mode=binary_mode
+        binary_mode=binary_mode,
+        enable_display=enable_display
     )
     
     model_loaded = load_model_if_specified(agent, 'ppo', load_model, load_best, load_latest)
@@ -226,19 +228,19 @@ def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=
 
 def main():
     parser = argparse.ArgumentParser(description='Train or test RL agents on Mario DS')
-    parser.add_argument('--algorithm', type=str, choices=['rainbow', 'ppo'], default='rainbow',
+    parser.add_argument('--algorithm', type=str, choices=['rainbow', 'ppo'], default='ppo',
                        help='Choose RL algorithm: rainbow (Rainbow DQN) or ppo (PPO)')
     parser.add_argument('--mode', type=str, choices=['train', 'test'], default='train',
                        help='Mode: train or test')
     parser.add_argument('--episodes', type=int, default=1000,
                        help='Number of episodes to train/test')
-    parser.add_argument('--save_interval', type=int, default=100,
+    parser.add_argument('--save_interval', type=int, default=50,
                        help='Save model every N episodes')
     parser.add_argument('--model_path', type=str, default=None,
                        help='Path to trained model for testing')
-    parser.add_argument('--frame_skip', type=int, default=4,
+    parser.add_argument('--frame_skip', type=int, default=10,
                        help='Number of frames to skip')
-    parser.add_argument('--frame_stack', type=int, default=4,
+    parser.add_argument('--frame_stack', type=int, default=2,
                        help='Number of frames to stack')
     parser.add_argument('--load-model', type=str, default=None,
                        help='Path to specific model to load')
@@ -246,6 +248,12 @@ def main():
                        help='Load the best model for the selected algorithm')
     parser.add_argument('--load-latest', action='store_true',
                        help='Load the latest episode model for the selected algorithm')
+    parser.add_argument('--no-display', action='store_true',
+                       help='Disable training metrics display window (keep emulator game window)')
+    parser.add_argument('--no-game-display', action='store_true',
+                       help='Disable emulator game window (completely headless)')
+    parser.add_argument('--action-frequency', type=int, default=20,
+                       help='Action frequency in Hz - controls how often the agent acts and environment steps (default: 20)')
     
     args = parser.parse_args()
     
@@ -253,16 +261,43 @@ def main():
     
     ppo_optimized = (args.algorithm == 'ppo')
     binary_mode = True  # Enable binary mode by default
-    env = MarioDSEnv(frame_skip=args.frame_skip, frame_stack=args.frame_stack, ppo_optimized=ppo_optimized, binary_mode=binary_mode)
     
+    BASE_FREQUENCY = 60
+    action_repeat_frames = BASE_FREQUENCY // args.action_frequency
+    
+    if args.action_frequency > BASE_FREQUENCY:
+        print(f"Warning: Action frequency ({args.action_frequency}Hz) is higher than base frequency ({BASE_FREQUENCY}Hz)")
+        print("Setting action frequency to match base frequency")
+        args.action_frequency = BASE_FREQUENCY
+        action_repeat_frames = 1
+    
+    print(f"Action frequency: {args.action_frequency}Hz")
+    print(f"Action repeat frames: {action_repeat_frames}")
+    
+    if args.no_display and args.no_game_display:
+        print("Running in completely headless mode (no displays)")
+    elif args.no_display:
+        print("Running with emulator display only (no training metrics display)")
+    elif args.no_game_display:
+        print("Running with training metrics display only (no emulator display)")
+
+    env = MarioDSEnv(
+        frame_skip=args.frame_skip, 
+        frame_stack=args.frame_stack, 
+        ppo_optimized=ppo_optimized, 
+        binary_mode=binary_mode, 
+        enable_display=not args.no_game_display,
+        action_repeat_frames=action_repeat_frames
+    )
+
     try:
         if args.mode == 'train':
             if args.algorithm == 'rainbow':
                 train_rainbow_dqn(env, args.episodes, args.save_interval, 
-                                        args.load_model, args.load_best, args.load_latest)
+                                        args.load_model, args.load_best, args.load_latest, enable_display=not args.no_display)
             elif args.algorithm == 'ppo':
                 train_ppo(env, args.episodes, args.save_interval,
-                                args.load_model, args.load_best, args.load_latest)
+                                args.load_model, args.load_best, args.load_latest, enable_display=not args.no_display)
         
             if args.model_path is None:
                 args.model_path = f'models/{args.algorithm}_best.pth'

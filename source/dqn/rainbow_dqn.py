@@ -205,7 +205,7 @@ class RainbowDQNAgent:
     def __init__(self, input_shape, n_actions, action_history_length=10, lr=0.0001, gamma=0.99, 
                  epsilon_start=1.0, epsilon_end=0.01, epsilon_decay=0.995,
                  buffer_size=100000, batch_size=32, target_update=1000,
-                 n_atoms=51, v_min=-10, v_max=10, multi_step=3):
+                 n_atoms=51, v_min=-10, v_max=10, multi_step=3, enable_display=True):
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
@@ -223,6 +223,7 @@ class RainbowDQNAgent:
         self.v_min = v_min
         self.v_max = v_max
         self.multi_step = multi_step
+        self.enable_display = enable_display
         
         # Networks
         self.q_network = RainbowDQN(input_shape, n_actions, action_history_length, n_atoms, v_min, v_max).to(self.device)
@@ -240,13 +241,15 @@ class RainbowDQNAgent:
         self.support = torch.linspace(v_min, v_max, n_atoms).to(self.device)
         self.delta_z = (v_max - v_min) / (n_atoms - 1)
         
-        # Training metrics
         self.step_count = 0
         self.episode_rewards = []
         self.losses = []
         
         # Frame display for visualization
-        self.frame_display = FrameDisplay(frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=8)
+        if self.enable_display:
+            self.frame_display = FrameDisplay(frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=8)
+        else:
+            self.frame_display = None
         
         # Disable matplotlib visualization - keep only emulator display
         # self.fig, self.axes = plt.subplots(2, 2, figsize=(12, 8))
@@ -265,7 +268,8 @@ class RainbowDQNAgent:
             action = q_values.argmax(dim=1).item()
             
             # Display frames and Q-values (Rainbow DQN doesn't have separate rewards/losses to display)
-            self.frame_display.display_frames(state['frames'], q_values.squeeze(0))
+            if self.enable_display and self.frame_display is not None:
+                self.frame_display.display_frames(state['frames'], q_values.squeeze(0))
         
         return action
     

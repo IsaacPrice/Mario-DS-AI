@@ -32,11 +32,13 @@ tracker = SummaryTracker()
 class MarioDSEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
 
-    def __init__(self, frame_skip=5, frame_stack=4, ppo_optimized=True, binary_mode=True):
+    def __init__(self, frame_skip=5, frame_stack=4, ppo_optimized=True, binary_mode=True, enable_display=True, action_repeat_frames=3):
         super(MarioDSEnv, self).__init__()
 
         self.ppo_optimized = ppo_optimized
         self.binary_mode = binary_mode
+        self.enable_display = enable_display
+        self.action_repeat_frames = action_repeat_frames
         
         if binary_mode:
             self.action_space = spaces.MultiBinary(6)
@@ -56,12 +58,17 @@ class MarioDSEnv(gym.Env):
 
         self.emu = DeSmuME()
         self.emu.open('NSMB.nds')
-        self.window = self.emu.create_sdl_window()
+        
+        if self.enable_display:
+            self.window = self.emu.create_sdl_window()
+        else:
+            self.window = None
+            
         self.saver = DeSmuME_Savestate(self.emu)
         self.saver.load_file(valid_saves[random.randint(0, len(valid_saves) - 1)])
 
         self.frame_count = 0
-        self.inputs = Input(self.emu)
+        self.inputs = Input(self.emu, action_repeat_frames=self.action_repeat_frames)
         
         if binary_mode:
             self.action_mapping = None
@@ -235,10 +242,12 @@ class MarioDSEnv(gym.Env):
         if mode == 'rgb_array':
             return self.emu.screenshot()
         elif mode == 'human':
-            self.window.draw()
+            if self.enable_display and self.window is not None:
+                self.window.draw()
 
 
     def close(self):
         self.emu.destroy()
-        self.window.destroy()
+        if self.window is not None:
+            self.window.destroy()
         

@@ -9,11 +9,13 @@ from source.env.frame_display import FrameDisplay
 from source.ppo.memory import PPOMemory
 from source.ppo.network import PPONetwork
 
+from source.ppo.reward_normalizer import RewardNormalizer
+
 
 class PPOAgent:
     def __init__(self, input_shape, n_actions, lr=3e-4, gamma=0.99, eps_clip=0.2, 
                  k_epochs=4, entropy_coef=0.01, value_coef=0.5, max_grad_norm=0.5,
-                 update_timestep=4096, gae_lambda=0.95, binary_mode=True):
+                 update_timestep=4096, gae_lambda=0.95, binary_mode=True, enable_display=True):
         print(torch.cuda.is_available())
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
@@ -30,11 +32,17 @@ class PPOAgent:
         self.update_timestep = update_timestep
         self.gae_lambda = gae_lambda
         self.binary_mode = binary_mode
+        self.enable_display = enable_display
         
         self.policy = PPONetwork(input_shape, n_actions, binary_mode=binary_mode).to(self.device)
         self.memory = PPOMemory(binary_mode=binary_mode)
+
+        self.reward_normalizer = RewardNormalizer()
         
-        self.frame_display = FrameDisplay(frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=n_actions, binary_mode=binary_mode)
+        if self.enable_display:
+            self.frame_display = FrameDisplay(frame_shape=(64, 96), scale=3, spacing=5, window_size=(640, 480), num_actions=n_actions, binary_mode=binary_mode)
+        else:
+            self.frame_display = None
         
         self.logger = None 
         self.episode_rewards = []
@@ -44,6 +52,7 @@ class PPOAgent:
         self.update_count = 0
         self.current_step_reward = 0
         self.current_loss = 0
+        self.frame_counter = 0
         self.action_counts = defaultdict(int)
         self.episode_action_counts = defaultdict(int)
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
@@ -64,13 +73,14 @@ class PPOAgent:
                 self.episode_action_counts[action] += 1
             
             action_probs, _ = self.policy.forward(frames)
-            self.frame_display.display_frames(
-                state, 
-                action_probs.squeeze(0), 
-                current_reward=self.current_step_reward, 
-                current_loss=self.current_loss if self.current_loss > 0 else None,
-                current_binary_input=current_binary_input
-            )
+            if self.enable_display and self.frame_display is not None:
+                self.frame_display.display_frames(
+                    state, 
+                    action_probs.squeeze(0), 
+                    current_reward=self.current_step_reward, 
+                    current_loss=self.current_loss if self.current_loss > 0 else None,
+                    current_binary_input=current_binary_input
+                )
             
         if self.binary_mode:
             return action, log_prob.item(), value.item()
@@ -111,11 +121,15 @@ class PPOAgent:
         update_start_time = time.time()
         
         frames, actions, rewards, dones, old_log_probs, old_values = self.memory.get_tensors(self.device)
-        
+
+        rewards_np = rewards.cpu().numpy()
+        self.reward_normalizer.update(rewards_np)
+        normalized_rewards = self.reward_normalizer.normalize(rewards_np)
+
         with torch.no_grad():
             _, next_value = self.policy(frames[-1:])
             returns = self.compute_gae(
-                rewards.cpu().numpy().tolist(),
+                normalized_rewards.tolist(),
                 old_values.cpu().numpy().tolist(),
                 dones.cpu().numpy().tolist(),
                 next_value.cpu().item()
@@ -189,6 +203,10 @@ class PPOAgent:
             )
         
         self.memory.clear()
+
+        if self.update_count % 100 == 0 and self.update_count > 0:
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] *= 0.99  # Gradually reduce learning rate
         
         return {
             'policy_loss': avg_policy_loss,
@@ -214,7 +232,8 @@ class PPOAgent:
         self.episode_lengths.append(episode_length)
         
         episode_info['episode'] = len(self.episode_rewards)
-        self.frame_display.update_episode_data(episode_info)
+        if self.enable_display and self.frame_display is not None:
+            self.frame_display.update_episode_data(episode_info)
         
         if self.logger:
             self.logger.log_episode(
