@@ -5,7 +5,7 @@ Train AI agents to play New Super Mario Bros. DS using advanced reinforcement le
 ## Features
 
 - **Rainbow DQN**: Advanced Deep Q-Network with prioritized replay, dueling architecture, distributional RL, multi-step learning, and noisy networks
-- **PPO**: Proximal Policy Optimization with actor-critic architecture and generalized advantage estimation
+- **PPO**: Proximal Policy Optimization with actor-critic architecture, generalized advantage estimation, and DrQv2 image augmentations
 - **Real-time training visualization**: Live plots of rewards, losses, and performance metrics
 - **Automatic model checkpointing**: Best models saved automatically with periodic backups
 - **Episode recording**: MP4 videos generated for performance analysis
@@ -44,6 +44,8 @@ python train_mario.py --algorithm ppo --mode test --model_path models/ppo_best.p
 - `--save_interval N`: Save model checkpoint every N episodes (default: 100)
 - `--frame_skip N`: Skip N frames between actions for faster training (default: 4)
 - `--frame_stack N`: Stack N consecutive frames for temporal information (default: 4)
+- `--no-augmentation`: Disable DrQv2 image augmentations for PPO (enabled by default)
+- `--num-augmentations N`: Number of augmented views per image for DrQv2 (default: 2)
 
 ### Example Commands
 
@@ -56,6 +58,12 @@ python train_mario.py --algorithm ppo --mode test --model_path models/ppo_episod
 
 # Fast training with higher frame skip
 python train_mario.py --algorithm rainbow --episodes 1000 --frame_skip 10
+
+# PPO training without DrQv2 image augmentations (enabled by default)
+python train_mario.py --algorithm ppo --no-augmentation
+
+# PPO training with more augmented views per frame
+python train_mario.py --algorithm ppo --num-augmentations 4
 ```
 
 ## Training Process
@@ -74,7 +82,7 @@ Models are saved in `models/` directory:
 
 The algorithms use optimized hyperparameters by default, but you can modify them in the source code:
 
-**PPO**: Learning rate 0.0003, GAE lambda 0.95, clip epsilon 0.2, 4 training epochs per update
+**PPO**: Learning rate 0.0003, GAE lambda 0.95, clip epsilon 0.2, 4 training epochs per update, DrQv2 image augmentations
 **Rainbow DQN**: Learning rate 0.0001, epsilon decay 0.995, 3-step returns, 51 distributional atoms
 
 ## Contributing

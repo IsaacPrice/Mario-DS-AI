@@ -136,8 +136,11 @@ def train_rainbow_dqn(env, episodes=1000, save_interval=100, load_model=None, lo
     return agent
 
 
-def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=False, load_latest=False, enable_display=True):
+def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=False, load_latest=False, enable_display=True, use_augmentation=True, num_augmentations=2):
     print("Training with PPO...")
+    
+    if use_augmentation:
+        print("Using DrQv2 image augmentations")
     
     binary_mode = hasattr(env, 'binary_mode') and env.binary_mode
     
@@ -163,7 +166,9 @@ def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=
         update_timestep=2048,
         gae_lambda=0.95,
         binary_mode=binary_mode,
-        enable_display=enable_display
+        enable_display=enable_display,
+        use_augmentation=use_augmentation,
+        num_augmentations=num_augmentations
     )
     
     model_loaded = load_model_if_specified(agent, 'ppo', load_model, load_best, load_latest)
@@ -186,7 +191,6 @@ def train_ppo(env, episodes=1000, save_interval=100, load_model=None, load_best=
         print(f"\nEpisode {episode + 1}/{episodes}")
         
         while not done:
-            # Get current binary input state for display
             current_binary_input = None
             if hasattr(env, 'binary_mode') and env.binary_mode and hasattr(env, 'inputs'):
                 current_binary_input = env.inputs.get_current_binary_input()
@@ -234,13 +238,13 @@ def main():
                        help='Mode: train or test')
     parser.add_argument('--episodes', type=int, default=1000,
                        help='Number of episodes to train/test')
-    parser.add_argument('--save_interval', type=int, default=50,
+    parser.add_argument('--save_interval', type=int, default=10,
                        help='Save model every N episodes')
     parser.add_argument('--model_path', type=str, default=None,
                        help='Path to trained model for testing')
-    parser.add_argument('--frame_skip', type=int, default=10,
+    parser.add_argument('--frame_skip', type=int, default=8,
                        help='Number of frames to skip')
-    parser.add_argument('--frame_stack', type=int, default=2,
+    parser.add_argument('--frame_stack', type=int, default=3,
                        help='Number of frames to stack')
     parser.add_argument('--load-model', type=str, default=None,
                        help='Path to specific model to load')
@@ -254,6 +258,10 @@ def main():
                        help='Disable emulator game window (completely headless)')
     parser.add_argument('--action-frequency', type=int, default=20,
                        help='Action frequency in Hz - controls how often the agent acts and environment steps (default: 20)')
+    parser.add_argument('--no-augmentation', action='store_true',
+                       help='Disable DrQv2 image augmentations for PPO (enabled by default)')
+    parser.add_argument('--num-augmentations', type=int, default=2,
+                       help='Number of augmented views per image for DrQv2 (default: 2)')
     
     args = parser.parse_args()
     
@@ -297,7 +305,10 @@ def main():
                                         args.load_model, args.load_best, args.load_latest, enable_display=not args.no_display)
             elif args.algorithm == 'ppo':
                 train_ppo(env, args.episodes, args.save_interval,
-                                args.load_model, args.load_best, args.load_latest, enable_display=not args.no_display)
+                                args.load_model, args.load_best, args.load_latest, 
+                                enable_display=not args.no_display,
+                                use_augmentation=not args.no_augmentation,
+                                num_augmentations=args.num_augmentations)
         
             if args.model_path is None:
                 args.model_path = f'models/{args.algorithm}_best.pth'

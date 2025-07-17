@@ -15,7 +15,8 @@ from source.ppo.reward_normalizer import RewardNormalizer
 class PPOAgent:
     def __init__(self, input_shape, n_actions, lr=3e-4, gamma=0.99, eps_clip=0.2, 
                  k_epochs=4, entropy_coef=0.01, value_coef=0.5, max_grad_norm=0.5,
-                 update_timestep=4096, gae_lambda=0.95, binary_mode=True, enable_display=True):
+                 update_timestep=4096, gae_lambda=0.95, binary_mode=True, enable_display=True,
+                 use_augmentation=False, num_augmentations=2):
         print(torch.cuda.is_available())
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
@@ -33,10 +34,16 @@ class PPOAgent:
         self.gae_lambda = gae_lambda
         self.binary_mode = binary_mode
         self.enable_display = enable_display
+        self.use_augmentation = use_augmentation
+        self.num_augmentations = num_augmentations
         
-        self.policy = PPONetwork(input_shape, n_actions, binary_mode=binary_mode).to(self.device)
+        self.policy = PPONetwork(
+            input_shape, 
+            n_actions, 
+            binary_mode=binary_mode
+        ).to(self.device)
+        
         self.memory = PPOMemory(binary_mode=binary_mode)
-
         self.reward_normalizer = RewardNormalizer()
         
         if self.enable_display:
@@ -143,6 +150,10 @@ class PPOAgent:
         total_entropy_loss = 0
         total_loss = 0
         
+        if self.use_augmentation:
+            from source.ppo.augmentation import PPODrQv2Augmentation
+            augmenter = PPODrQv2Augmentation(num_augmentations=self.num_augmentations).to(self.device)
+        
         for epoch in range(self.k_epochs):
             action_probs, values = self.policy(frames)
             
@@ -168,6 +179,21 @@ class PPOAgent:
             
             entropy_loss = -entropy
             loss = policy_loss + self.value_coef * value_loss + self.entropy_coef * entropy_loss
+            
+            if self.use_augmentation:
+                sample_idx = torch.randperm(len(frames))[:min(256, len(frames))]
+                frames_sample = frames[sample_idx]
+                
+                augmented_frames = augmenter.augment_batch(frames_sample)
+                
+                _, aug_values = self.policy(augmented_frames)
+                
+                aug_value_loss = F.mse_loss(aug_values.squeeze(), 
+                                           torch.repeat_interleave(returns[sample_idx], 
+                                                                  self.num_augmentations + 1, 
+                                                                  dim=0)[:len(aug_values)])
+                
+                loss += self.value_coef * 0.5 * aug_value_loss
             
             total_policy_loss += policy_loss.item()
             total_value_loss += value_loss.item()
